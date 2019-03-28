@@ -1,10 +1,10 @@
 import tensorflow as tf
-import random
+from keras.preprocessing.sequence import pad_sequences
 import numpy as np
 from tensorflow import keras
 
 
-def initializeNetwork(inputShape, nodesPerLayer, outputLength, activation, useDropout):
+def initializeNetwork(inputShape, nodesPerLayer, outputLength, activation, useDropout, optimizer='rmsprop'):
     "Generates LSTM networks given hyperparameters"
     network = keras.Sequential()
     network.add(keras.layers.LSTM(nodesPerLayer[0], input_shape=inputShape, name='InputLayer', return_sequences=True))
@@ -16,46 +16,51 @@ def initializeNetwork(inputShape, nodesPerLayer, outputLength, activation, useDr
     if useDropout:
         network.add(keras.layers.Dropout(rate=0.5))
     network.add(keras.layers.Dense(outputLength, activation=activation))
-    network.compile(optimizer='rmsprop', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
+    network.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     return network
 
 
-def generateTrainingData(maxVal, inputSize, size):
-    "Generate Training Data and labels"
-    temp = []
-    for x in range(0, inputSize):
-        temp.append(0)
-    data = [temp]
-    combined = [0]
-    for y in range(1, size):
-        temp2 = []
-        for z in range(0, inputSize):
-            temp2.append(random.randint(0, maxVal))
-        data.append(temp2)
-        combined.append(np.sum(temp2) + int(combined[y - 1] / 2))
-    data = tf.reshape(data, shape=(size, 1, inputSize))
-    combined = tf.reshape(combined, shape=(size, 1))
-    return data, combined
+def generateTrainingData(numOfInputs=1000, maxLength=5, verbose=False):
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    charToInt = dict((c, i+1) for i, c in enumerate(alphabet))
+    dataX = []
+    dataY = []
+    for i in range(numOfInputs):
+        start = np.random.randint(len(alphabet) - 2)
+        end = np.random.randint(start, min(start + maxLength, len(alphabet) - 1))
+        sequence_in = alphabet[start:end + 1]
+        sequence_out = alphabet[end + 1]
+        dataX.append([charToInt[char] for char in sequence_in])
+        dataY.append(charToInt[sequence_out])
+        if verbose:
+            print(sequence_in, '->', sequence_out)
+    x = pad_sequences(dataX, maxlen=maxLength, dtype='float32')
+    x = np.reshape(x, (x.shape[0], maxLength, 1))
+
+    return x, dataY
 
 
-def initializeNetworkTest(inputModel, maxValue = 10, inSize = 10, sequenceLength = 100, batchSize = 1, iterations = 500):
-    sess = tf.Session()
-    for i in range(0, iterations):
-        trainData, trainLabel = generateTrainingData(maxValue, inSize, sequenceLength)
-        model.fit(x=trainData, y=trainLabel, verbose=False, batch_size=batchSize, steps_per_epoch=int(sequenceLength/batchSize), epochs=1)
-        print("%g%s" % (i/iterations*100, "%"))
+def initializeNetworkTest(inputModel, numOfInputs=1000, maxLength=5, iterations=100, epochs=5, batchSize=1, verbose=False):
+    for rep in range(iterations):
+        x, y = generateTrainingData(numOfInputs, maxLength, verbose)
+        inputModel.fit(x=x, y=y, verbose=verbose, batch_size=batchSize, epochs=epochs)
+        print('%g%s'%((rep+1)/iterations * 100, "%"))
 
-    testData, testLabel = generateTrainingData(maxValue, inSize, sequenceLength)
-    pred = model.predict(testData, batch_size=batchSize, steps=int(sequenceLength/batchSize))
-    model.evaluate(testData, testLabel, verbose=True, steps=int(sequenceLength/batchSize))
+    alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+    intToChar = dict((i + 1, c) for i, c in enumerate(alphabet))
 
-    print()
-    for j in range(0, 10):
-        print(sess.run(testData[j]), ":", sess.run(testLabel[j]), " -> ", np.argmax(pred[j]))
-        print()
+    x2, y2 = generateTrainingData(20, maxLength, verbose=verbose)
+
+    prediction = model.predict(x2, verbose=0)
+    for i in range(len(x2)):
+        index = np.argmax(prediction[i])
+        result = intToChar[index]
+        seqIn = []
+        for j in range(len(x2[i])):
+            if x2[i][j][0] > 0:
+                seqIn.append(intToChar[x2[i][j][0]])
+        print(seqIn, "->", result)
 
 
-inLen = 10
-mVal = 10
-model = initializeNetwork((1, inLen,), [32], inLen * mVal * 2 + 1, 'softmax', True)
-initializeNetworkTest(model, mVal, inLen)
+model = initializeNetwork((5, 1,), [32], 26, 'softmax', False)
+initializeNetworkTest(model, numOfInputs=100)
