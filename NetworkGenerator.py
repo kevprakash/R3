@@ -1,8 +1,7 @@
-import tensorflow as tf
 from keras.preprocessing.sequence import pad_sequences
 import numpy as np
 from tensorflow import keras
-
+import R3Utilities as R3Util
 
 def initializeNetwork(inputShape, nodesPerLayer, outputLength, activation, useDropout, optimizer='rmsprop'):
     "Generates LSTM networks given hyperparameters"
@@ -27,8 +26,8 @@ def generateTrainingData(numOfInputs=1000, maxLength=5, verbose=False):
     dataY = []
     for i in range(numOfInputs):
         start = np.random.randint(len(alphabet) - 2)
-        end = np.random.randint(start, min(start + maxLength, len(alphabet) - 1))
-        sequence_in = alphabet[start:end + 1]
+        end = np.random.randint(start, min(start + maxLength, len(alphabet)-1))
+        sequence_in = alphabet[start:(end+1)]
         sequence_out = alphabet[end + 1]
         dataX.append([charToInt[char] for char in sequence_in])
         dataY.append(charToInt[sequence_out])
@@ -44,10 +43,17 @@ def initializeNetworkTest(inputModel, numOfInputs=1000, maxLength=5, iterations=
     for rep in range(iterations):
         x, y = generateTrainingData(numOfInputs, maxLength, verbose)
         inputModel.fit(x=x, y=y, verbose=verbose, batch_size=batchSize, epochs=epochs)
-        print('%g%s'%((rep+1)/iterations * 100, "%"))
+        if rep == 0:
+            print("Training start")
+            #print('%g%s' % ((rep + 1) / iterations * 100, "%"), end="")
+        R3Util.printLoadBar(rep/iterations, 20)
+        #else:
+            #print('%s%g%s' % ("\r", (rep+1)/iterations * 100, "%"), end="")
+    R3Util.printLoadBar(1, 20)
+    print("Training end")
 
     alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-    intToChar = dict((i + 1, c) for i, c in enumerate(alphabet))
+    intToChar = dict((i+1, c) for i, c in enumerate(alphabet))
 
     x2, y2 = generateTrainingData(20, maxLength, verbose=verbose)
 
@@ -59,8 +65,8 @@ def initializeNetworkTest(inputModel, numOfInputs=1000, maxLength=5, iterations=
         for j in range(len(x2[i])):
             if x2[i][j][0] > 0:
                 seqIn.append(intToChar[x2[i][j][0]])
-        print(seqIn, "->", result)
+        print(seqIn, "->", result, ":", index)
 
 
-model = initializeNetwork((5, 1,), [32], 26, 'softmax', False)
-initializeNetworkTest(model, numOfInputs=100)
+model = initializeNetwork((5, 1,), [32], 27, 'softmax', False)
+initializeNetworkTest(model, iterations=100, numOfInputs=5, epochs=1, verbose=False)
