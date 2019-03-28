@@ -87,6 +87,7 @@ def testCNAE(encodeModel, decodeModel, dataSet):
     plt.show()
     return test_loss
 
+
 (trainImg, _), (testImg, _) = keras.datasets.cifar100.load_data()
 trainImg = trainImg/256
 testImg = testImg/256
