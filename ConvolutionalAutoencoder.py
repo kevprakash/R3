@@ -88,9 +88,9 @@ def testCNAE(encodeModel, decodeModel, dataSet):
     return test_loss
 
 
-(trainImg, _), (testImg, _) = keras.datasets.cifar100.load_data()
-trainImg = trainImg/256
-testImg = testImg/256
-enc, dec = generateNetworks((32, 32, 3), [64], [(4, 4)], useDroput=True)
-trainCNAE(enc, dec, trainImg, 5)
-testCNAE(enc, dec, testImg)
+#(trainImg, _), (testImg, _) = keras.datasets.cifar100.load_data()
+#trainImg = trainImg/256
+#testImg = testImg/256
+#enc, dec = generateNetworks((32, 32, 3), [64], [(4, 4)], useDroput=True)
+#trainCNAE(enc, dec, trainImg, 5)
+#testCNAE(enc, dec, testImg)

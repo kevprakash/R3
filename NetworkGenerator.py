@@ -45,11 +45,8 @@ def initializeNetworkTest(inputModel, numOfInputs=1000, maxLength=5, iterations=
         inputModel.fit(x=x, y=y, verbose=verbose, batch_size=batchSize, epochs=epochs)
         if rep == 0:
             print("Training start")
-            #print('%g%s' % ((rep + 1) / iterations * 100, "%"), end="")
-        R3Util.printLoadBar(rep/iterations, 20)
-        #else:
-            #print('%s%g%s' % ("\r", (rep+1)/iterations * 100, "%"), end="")
-    R3Util.printLoadBar(1, 20)
+        R3Util.printLoadBar(rep/iterations, 50)
+    R3Util.printLoadBar(1, 50)
     print("Training end")
 
     alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -57,7 +54,7 @@ def initializeNetworkTest(inputModel, numOfInputs=1000, maxLength=5, iterations=
 
     x2, y2 = generateTrainingData(20, maxLength, verbose=verbose)
 
-    prediction = model.predict(x2, verbose=0)
+    prediction = inputModel.predict(x2, verbose=0)
     for i in range(len(x2)):
         index = np.argmax(prediction[i])
         result = intToChar[index]
@@ -68,5 +65,5 @@ def initializeNetworkTest(inputModel, numOfInputs=1000, maxLength=5, iterations=
         print(seqIn, "->", result, ":", index)
 
 
-model = initializeNetwork((5, 1,), [32], 27, 'softmax', False)
-initializeNetworkTest(model, iterations=100, numOfInputs=5, epochs=1, verbose=False)
+#model = initializeNetwork((5, 1,), [32], 27, 'softmax', False)
+#initializeNetworkTest(model, iterations=100, numOfInputs=100, epochs=1, verbose=False)

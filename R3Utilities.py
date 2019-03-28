@@ -19,7 +19,11 @@ def printLoadBar (percentage, length, endString=""):
     else:
         print("%s%d%s%s%s" % ("\r", (percentage * 100), "%", bar, endString), end="")
 
-for i in range(100):
-    printLoadBar(i/100, 20)
-    time.sleep(0.1)
-printLoadBar(1, 20)
+def printLoadBarTest():
+    for i in range(100):
+        printLoadBar(i/100, 20)
+        time.sleep(0.1)
+    printLoadBar(1, 20)
+
+
+#printLoadBarTest()
