@@ -1,6 +1,18 @@
 import time
 from ctypes import *
 from ctypes.wintypes import *
+import pyscreenshot as ImageGrab
+
+# takes screenshot of part of the screen
+
+#may not be the best labels or inccorect
+def takeScreenShot(X1, Y1, X2, Y2):
+    im = ImageGrab.grab(bbox=(X1, Y1, X2, Y2), childprocess=False)
+    return im
+
+def takeScreenShotTest():
+    image = takeScreenShot(0, 0, 200, 200)
+    image.show()
 
 def printLoadBar (percentage, length, endString=""):
     bar = "["
@@ -32,7 +44,6 @@ def readMemoryAddress(processID=4044, memoryAddress=0x1000000):
     ReadProcessMemory = windll.kernel32.ReadProcessMemory
     CloseHandle = windll.kernel32.CloseHandle
     PROCESS_ALL_ACCESS = 0x1F0FFF
-
     pid = processID
     address = memoryAddress
 
@@ -55,3 +66,5 @@ def readMemoryTest():
 
 #printLoadBarTest()
 readMemoryTest()
+#printLoadBarTest()
+takeScreenShotTest()
