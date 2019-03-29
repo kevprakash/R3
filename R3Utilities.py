@@ -1,4 +1,19 @@
 import time
+import pyscreenshot as ImageGrab
+
+# takes screenshot of part of the screen
+
+#may not be the best labels or inccorect
+def takeScreenShot(X1, Y1, X2, Y2):
+    im = ImageGrab.grab(bbox=(X1, Y1, X2, Y2), childprocess=False)
+    return im
+
+def takeScreenShotTest():
+    image = takeScreenShot(0, 0, 200, 200)
+    image.show()
+
+
+
 
 def printLoadBar (percentage, length, endString=""):
     bar = "["
@@ -27,3 +42,4 @@ def printLoadBarTest():
 
 
 #printLoadBarTest()
+takeScreenShotTest()
