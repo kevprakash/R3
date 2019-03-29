@@ -1,4 +1,6 @@
 import time
+from ctypes import *
+from ctypes.wintypes import *
 
 def printLoadBar (percentage, length, endString=""):
     bar = "["
@@ -25,5 +27,31 @@ def printLoadBarTest():
         time.sleep(0.1)
     printLoadBar(1, 20)
 
+def readMemoryAddress(processID=4044, memoryAddress=0x1000000):
+    OpenProcess = windll.kernel32.OpenProcess
+    ReadProcessMemory = windll.kernel32.ReadProcessMemory
+    CloseHandle = windll.kernel32.CloseHandle
+    PROCESS_ALL_ACCESS = 0x1F0FFF
+
+    pid = processID
+    address = memoryAddress
+
+    buffer = ctypes.c_ulong()
+    bufferSize = ctypes.sizeof(buffer)
+    bytesRead = c_ulong(0)
+
+
+    processHandle = OpenProcess(PROCESS_ALL_ACCESS, False, pid)
+    if ReadProcessMemory(processHandle, address, ctypes.byref(buffer), bufferSize, ctypes.byref(bytesRead)):
+        print("Success:", buffer.value)
+    else:
+        print("Failed.")
+
+    CloseHandle(processHandle)
+
+def readMemoryTest():
+    readMemoryAddress(processID=17928, memoryAddress=0x04311148)
+
 
 #printLoadBarTest()
+readMemoryTest()
