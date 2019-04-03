@@ -3,15 +3,12 @@ from ctypes import *
 from ctypes.wintypes import *
 import pyscreenshot as ImageGrab
 
-# takes screenshot of part of the screen
-
-#may not be the best labels or inccorect
 def takeScreenShot(X1, Y1, X2, Y2):
     im = ImageGrab.grab(bbox=(X1, Y1, X2, Y2), childprocess=False)
     return im
 
 def takeScreenShotTest():
-    image = takeScreenShot(0, 0, 200, 200)
+    image = takeScreenShot(0, 0, 1920, 1080)
     image.show()
 
 def printLoadBar (percentage, length, endString=""):
@@ -62,9 +59,3 @@ def readMemoryAddress(processID=4044, memoryAddress=0x1000000):
 
 def readMemoryTest():
     readMemoryAddress(processID=17928, memoryAddress=0x04311148)
-
-
-#printLoadBarTest()
-readMemoryTest()
-#printLoadBarTest()
-takeScreenShotTest()
