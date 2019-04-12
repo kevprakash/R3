@@ -2,69 +2,58 @@ import tensorflow as tf
 from tensorflow import keras
 import matplotlib.pyplot as plt
 import numpy as np
+import random
 
-def generateNetworks(inputShape, numberOfFilters, filterSizes, useDroput=True):
+def imageLoss(img1, img2):
+    return tf.reduce_mean(1-tf.image.ssim_multiscale(img1=img1, img2=img2, max_val=1.0))
+
+def generateNetworks(inputShape, numberOfFilters, filterSizes, latentSpaceLength, hiddenActivation=tf.nn.relu, learningRate=0.0001, useDroput=True):
     assert len(numberOfFilters) == len(filterSizes)
-    encodeInputLayer = keras.layers.Conv2D(input_shape=inputShape, filters=numberOfFilters[0], kernel_size=filterSizes[0], activation=tf.nn.relu, padding='same', name="Input")
-    hiddenLayers = [keras.layers.MaxPool2D((2, 2), padding='same')]
+    inputLayer = keras.layers.Conv2D(input_shape=inputShape, filters=numberOfFilters[0], kernel_size=filterSizes[0], padding='same', activation=hiddenActivation, name='EncodeInput')
+    encodeLayers = [inputLayer]
+    for i in range(1, len(filterSizes)):
+        encodeLayers.append(keras.layers.MaxPool2D(pool_size=filterSizes[i-1], padding='same'))
+        if useDroput:
+            encodeLayers.append(keras.layers.Dropout(rate=0.5))
+        encodeLayers.append(keras.layers.Conv2D(filters=numberOfFilters[i], kernel_size=filterSizes[i], padding='same', activation=hiddenActivation, name="%s%d" % ("Convolution_", i)))
+    encodeLayers.append(keras.layers.Flatten())
+    encodeLayers.append(keras.layers.Dense(latentSpaceLength, activation=tf.nn.sigmoid, name="EncodeOutput"))
+
+    encode = keras.Sequential(encodeLayers)
+    encode.compile(optimizer=tf.keras.optimizers.Adam(lr=learningRate), loss='mean_squared_error')
+
+    _, d1, d2, d3 = encode.layers[-3].output_shape
+    reshape = (d1, d2, d3)
+    reshapeLength = d1 * d2 * d3
+
+    _, o2 = encode.output_shape
+
+    decodeInput = keras.layers.Dense(input_shape=(o2,), units=reshapeLength, name="DecodeInput")
+    decodeReshape = keras.layers.Reshape(target_shape=reshape, name='Reshape')
+    decodeLayers = [decodeInput, decodeReshape]
     if useDroput:
-        hiddenLayers.insert(0, keras.layers.Dropout(rate=0.5))
-    for i in range(len(filterSizes) - 1):
-        hidden = keras.layers.Conv2D(filters=numberOfFilters[i+1], kernel_size=filterSizes[i+1], activation=tf.nn.relu, padding='same', name="%s%d"%("Hidden_", (i+1)))
-        hiddenLayers.append(hidden)
+        decodeLayers.append(keras.layers.Dropout(rate=0.5))
+    for i in range(len(filterSizes)-1, 0, -1):
+        decodeLayers.append(keras.layers.Conv2DTranspose(filters=numberOfFilters[i-1], kernel_size=filterSizes[i-1], padding='same', activation=hiddenActivation, name="%s%d" % ("Deconvolution_", i)))
+        decodeLayers.append(keras.layers.UpSampling2D(size=filterSizes[i-1]))
         if useDroput:
-            hiddenLayers.append(keras.layers.Dropout(rate=0.5))
-        hiddenLayers.append(keras.layers.MaxPool2D((2, 2), padding='same'))
+            decodeLayers.append(keras.layers.Dropout(rate=0.5))
+    decodeLayers.append(keras.layers.Conv2DTranspose(filters=inputShape[2], kernel_size=(2, 2), padding='same', activation=tf.nn.sigmoid, name='DecodeOutput'))
 
-    encodeModelLayers = [encodeInputLayer]
-    encodeModelLayers.extend(hiddenLayers)
-    encodeModelLayers.append(keras.layers.Activation(activation=tf.nn.relu))
+    decode = keras.Sequential(decodeLayers)
+    decode.compile(optimizer=tf.keras.optimizers.Adam(lr=learningRate), loss=imageLoss)
 
-    encodeModel = keras.Sequential(encodeModelLayers)
-    encodeModel.compile(optimizer="rmsprop", loss='mean_squared_error')
+    combinedLayers = []
+    combinedLayers.extend(encodeLayers)
+    combinedLayers.extend(decode.layers)
+    combined = keras.Sequential(combinedLayers)
+    combined.compile(optimizer=tf.keras.optimizers.Adam(lr=learningRate), loss=imageLoss)
 
-    _, r1, r2, r3 = encodeModel.output_shape
-    retargetSize = (r1, r2, r3)
-
-    hiddenDecodeLayers = []
-    i = 0
-    while i < len(hiddenLayers):
-        if (i == 0):
-            hiddenDecodeLayers.append(keras.layers.UpSampling2D((2, 2), input_shape=retargetSize, name="%s%d" % ("Upsampling", i + 1)))
-        else:
-            hiddenDecodeLayers.append(keras.layers.UpSampling2D((2, 2), name="%s%d"%("Upsampling", i+1)))
-        i = i + 1
-        if useDroput:
-            i = i + 1
-            hiddenDecodeLayers.append(keras.layers.Dropout(rate=0.5))
-        if i == len(hiddenLayers):
-            break
-        hiddenDecodeLayers.append(hiddenLayers[-(i+1)])
-        i = i+1
-
-    decodeOutputLayer = keras.layers.Conv2D(filters=inputShape[2], kernel_size=(2, 2), strides=(1, 1), activation=tf.nn.sigmoid, padding='same')
-
-    decodeModelLayers = []
-    decodeModelLayers.extend(hiddenDecodeLayers)
-    decodeModelLayers.append(decodeOutputLayer)
-
-    decodeModel = keras.Sequential(decodeModelLayers)
-    decodeModel.compile(optimizer="rmsprop", loss='mean_squared_error')
-
-    return encodeModel, decodeModel
+    return encode, decode, combined
 
 
-def trainCNAE(encodeModel, decodeModel, dataSet, batchSize, iterations):
-    encodedLayers = encodeModel.layers
-    decodedLayers = decodeModel.layers
-    train = []
-    train.extend(encodedLayers)
-    train.extend(decodedLayers)
-    trainModel = keras.Sequential(train)
-    trainModel.compile(optimizer='rmsprop', loss='mean_squared_error')
-    #for layer in trainModel.layers:
-        #print(layer.output_shape)
-    trainModel.fit(dataSet, dataSet, batch_size=batchSize, epochs=iterations)
+def trainCNAE(model, dataSet, batchSize, iterations, verbose=True):
+    model.fit(dataSet, dataSet, batch_size=batchSize, epochs=iterations, verbose=verbose)
 
 
 def testCNAE(encodeModel, decodeModel, dataSet, displayedRows=5, displayedColumns=5, batchSize=1):
@@ -73,19 +62,20 @@ def testCNAE(encodeModel, decodeModel, dataSet, displayedRows=5, displayedColumn
     test_loss = decodeModel.evaluate(encoded, dataSet, batch_size=batchSize)
     print(test_loss)
     plt.figure(figsize=(19, 11))
-    for i in range(min(displayedRows * displayedColumns, len(dataSet))):
-        plt.subplot(displayedRows, displayedColumns * 2, i*2 + 1)
+    for i in range(0, (displayedRows * displayedColumns)):
+        x = random.randint(0, len(dataSet)-1)
+        plt.subplot(displayedRows, displayedColumns * 2, i * 2 + 1)
         plt.xticks([])
         plt.yticks([])
         plt.grid(False)
-        inImage = np.reshape(dataSet[i], newshape=(len(dataSet[i][0]), len(dataSet[i]), len(dataSet[i][0][0])))
+        inImage = np.reshape(dataSet[x], newshape=(len(dataSet[x][0]), len(dataSet[x]), len(dataSet[x][0][0])))
         plt.imshow(inImage, cmap=plt.cm.hsv)
         plt.xlabel("Original")
         plt.subplot(displayedRows, displayedColumns * 2, i * 2 + 2)
         plt.xticks([])
         plt.yticks([])
         plt.grid(False)
-        outImage = np.reshape(decoded[i], newshape=(len(decoded[i][0]), len(decoded[i]), len(decoded[i][0][0])))
+        outImage = np.reshape(decoded[x], newshape=(len(decoded[x][0]), len(decoded[x]), len(decoded[x][0][0])))
         plt.imshow(outImage, cmap=plt.cm.hsv)
         plt.xlabel("Reconstructed")
     plt.show()
