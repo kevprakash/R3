@@ -3,12 +3,20 @@
 # import everything from tkinter
 from tkinter import *
 from tkinter import messagebox
+from tkinter import filedialog
 
+#Create a function to save user_input
+def retrieve_input():
+    inputValue = label2_entry.get("1.0", "end-1c")
+    print(inputValue)
 
+    textBox = Text(my_window, height =2, width =10)
+    textBox.pack()
 
 #Create a close_window button
 def close_window (my_window):
     my_window.destroy()
+
 
 
 #Create a confirmation button.
@@ -19,6 +27,7 @@ def confirmation():
             my_window.destroy()
         else:
             messagebox.showinfo('Return', 'You will now return to the application screen')
+
 
 
 #Create Window object
@@ -59,7 +68,7 @@ frame_d.grid(row = 1, column = 1)
 
 
 label1 = Label(frame_a,
-               text = "Introduction:\nLine 1\nLine 2\nLine 3\nLine 4\nLine 5\nLine 6",
+               text = "Introduction:\nStep 1: \nStep 2: \nStep 3: \nStep 4: \nStep 5: ",
                #bg = '#faff9b',
                fg = '#5b112c',
                font = "Verdana 20 bold italic",
@@ -122,7 +131,7 @@ button_1.pack()
 button_2 = Button(frame_b,
                   text = "SAVE",
                   width = "18",
-                  )
+                  command = lambda:retrieve_input())
 button_2.grid(row = 1, column = 0)
 button_2.pack()
 
