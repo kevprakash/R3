@@ -1,7 +1,7 @@
 from tensorflow import keras
 
 def initializeRewardNetwork(convolutionNetwork, controllerNetwork, nodesPerLayer, outputLength, dropoutRate=0, optimizer='rmsprop', hiddenActivation='relu', activation='sigmoid'):
-    x = keras.layers.Concatenate([convultionNetwork, controllerNetwork], axis=1)
+    x = keras.layers.Concatenate([convolutionNetwork, controllerNetwork], axis=1)
     for i in range(0, len(nodesPerLayer) - 1):
         x = keras.layers.LSTM(nodesPerLayer[i], return_sequences=True, activation=hiddenActivation)(x)
         if dropoutRate > 0:
