@@ -1,10 +1,12 @@
 import time
 from ctypes import *
 from ctypes.wintypes import *
+from PIL import Image
 import pyscreenshot as ImageGrab
 
-def takeScreenShot(X1, Y1, X2, Y2):
+def takeScreenShot(X1, Y1, X2, Y2, outputSize):
     im = ImageGrab.grab(bbox=(X1, Y1, X2, Y2), childprocess=False)
+    im.resize(outputSize, Image.ANTIALIAS)
     return im
 
 def takeScreenShotTest():

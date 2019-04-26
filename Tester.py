@@ -15,8 +15,7 @@ def encodeScreenshotTest(x1, x2, y1, y2, originalSize, compressedSize, numOfImag
     for i in range(numOfImages):
         randX = random.randint(x1, x2)
         randY = random.randint(y1, y2)
-        im = R3Util.takeScreenShot(randX, randY, randX + originalSize[0], randY + originalSize[1])
-        im = im.resize(compressedSize, Image.ANTIALIAS)
+        im = R3Util.takeScreenShot(randX, randY, randX + originalSize[0], randY + originalSize[1], compressedSize)
         im = numpy.array(im)
         im = im/256
         inData.append(im)
