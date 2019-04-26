@@ -1,6 +1,7 @@
 import time
 import R3Utilities as R3Util
 import ConvolutionalAutoencoder as CAE
+import RewardNetwork as RN
 import numpy
 import random
 import tensorflow as tf
@@ -26,6 +27,5 @@ def encodeScreenshotTest(x1, x2, y1, y2, originalSize, compressedSize, numOfImag
     CAE.trainCNAE(cnae, inData, batchSize=batchSize, iterations=trainingIterations, verbose=True)
     CAE.testCNAE(enc, dec, inData, batchSize=1, displayedRows=5, displayedColumns=5)
 
-
 #time.sleep(1)
-encodeScreenshotTest(0, 0, 0, 0, (1920, 1080), (288, 192), 1000, batchSize=16, timeBetweenScreenshots=0)
+#encodeScreenshotTest(0, 0, 0, 0, (1920, 1080), (288, 192), 1000, batchSize=16, timeBetweenScreenshots=0)

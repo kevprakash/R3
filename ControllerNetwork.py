@@ -1,19 +1,22 @@
 from keras.preprocessing.sequence import pad_sequences
 import numpy as np
+import tensorflow as tf
 from tensorflow import keras
 import R3Utilities as R3Util
 
-def initializeControllerNetwork(inputShape, nodesPerLayer, outputLength, activation, useDropout=False, optimizer='rmsprop'):
+def initializeControllerNetwork(inputModel, nodesPerLayer, outputLength, hiddenActivation=tf.nn.relu, activation=tf.nn.sigmoid, dropoutRate=0, optimizer='rmsprop'):
     "Generates LSTM networks given hyperparameters"
     network = keras.Sequential()
-    network.add(keras.layers.LSTM(nodesPerLayer[0], input_shape=inputShape, name='InputLayer', return_sequences=True))
-    for x in range(1, len(nodesPerLayer)-1):
-        network.add(keras.layers.LSTM(nodesPerLayer[x], return_sequences=True))
-        if useDropout:
-            network.add(keras.layers.Dropout(rate=0.5))
-    network.add(keras.layers.LSTM(nodesPerLayer[-1], return_sequences=False))
-    if useDropout:
-        network.add(keras.layers.Dropout(rate=0.5))
+    inputModelLayers = inputModel.layers
+    for l in inputModelLayers:
+        network.add(l)
+    for x in range(0, len(nodesPerLayer) - 1):
+        network.add(keras.layers.LSTM(nodesPerLayer[x], return_sequences=True, activation=hiddenActivation))
+        if dropoutRate > 0:
+            network.add(keras.layers.Dropout(rate=dropoutRate))
+    network.add(keras.layers.LSTM(nodesPerLayer[-1], return_sequences=False, activation=hiddenActivation))
+    if dropoutRate > 0:
+        network.add(keras.layers.Dropout(rate=dropoutRate))
     network.add(keras.layers.Dense(outputLength, activation=activation))
     network.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     return network
