@@ -3,7 +3,7 @@ import numpy as np
 from tensorflow import keras
 import R3Utilities as R3Util
 
-def initializeNetwork(inputShape, nodesPerLayer, outputLength, activation, useDropout, optimizer='rmsprop'):
+def initializeControllerNetwork(inputShape, nodesPerLayer, outputLength, activation, useDropout=False, optimizer='rmsprop'):
     "Generates LSTM networks given hyperparameters"
     network = keras.Sequential()
     network.add(keras.layers.LSTM(nodesPerLayer[0], input_shape=inputShape, name='InputLayer', return_sequences=True))
@@ -39,7 +39,7 @@ def generateTrainingData(numOfInputs=1000, maxLength=5, verbose=False):
     return x, dataY
 
 
-def initializeNetworkTest(inputModel, numOfInputs=1000, maxLength=5, iterations=100, epochs=5, batchSize=1, verbose=False):
+def initializeControllerNetworkTest(inputModel, numOfInputs=1000, maxLength=5, iterations=100, epochs=5, batchSize=1, verbose=False):
     for rep in range(iterations):
         x, y = generateTrainingData(numOfInputs, maxLength, verbose)
         inputModel.fit(x=x, y=y, verbose=verbose, batch_size=batchSize, epochs=epochs)
@@ -63,7 +63,3 @@ def initializeNetworkTest(inputModel, numOfInputs=1000, maxLength=5, iterations=
             if x2[i][j][0] > 0:
                 seqIn.append(intToChar[x2[i][j][0]])
         print(seqIn, "->", result, ":", index)
-
-
-#model = initializeNetwork((5, 1,), [32], 27, 'softmax', False)
-#initializeNetworkTest(model, iterations=100, numOfInputs=100, epochs=1, verbose=False)

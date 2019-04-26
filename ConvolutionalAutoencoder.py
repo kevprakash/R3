@@ -4,23 +4,27 @@ import matplotlib.pyplot as plt
 import numpy as np
 import random
 
+
 def imageLoss(img1, img2):
     return tf.reduce_mean(1-tf.image.ssim_multiscale(img1=img1, img2=img2, max_val=1.0))
 
-def generateNetworks(inputShape, numberOfFilters, filterSizes, latentSpaceLength, hiddenActivation=tf.nn.relu, learningRate=0.0001, useDroput=True):
+
+def generateNetworks(inputShape, numberOfFilters, filterSizes, latentSpaceLength, hiddenActivation=tf.nn.relu, learningRate=0.0001, dropoutRate=0.1):
     assert len(numberOfFilters) == len(filterSizes)
     inputLayer = keras.layers.Conv2D(input_shape=inputShape, filters=numberOfFilters[0], kernel_size=filterSizes[0], padding='same', activation=hiddenActivation, name='EncodeInput')
     encodeLayers = [inputLayer]
     for i in range(1, len(filterSizes)):
         encodeLayers.append(keras.layers.MaxPool2D(pool_size=filterSizes[i-1], padding='same'))
-        if useDroput:
-            encodeLayers.append(keras.layers.Dropout(rate=0.5))
+        if dropoutRate > 0:
+            encodeLayers.append(keras.layers.Dropout(rate=dropoutRate))
         encodeLayers.append(keras.layers.Conv2D(filters=numberOfFilters[i], kernel_size=filterSizes[i], padding='same', activation=hiddenActivation, name="%s%d" % ("Convolution_", i)))
     encodeLayers.append(keras.layers.Flatten())
     encodeLayers.append(keras.layers.Dense(latentSpaceLength, activation=tf.nn.sigmoid, name="EncodeOutput"))
 
     encode = keras.Sequential(encodeLayers)
     encode.compile(optimizer=tf.keras.optimizers.Adam(lr=learningRate), loss='mean_squared_error')
+
+    print(encode.output_shape)
 
     _, d1, d2, d3 = encode.layers[-3].output_shape
     reshape = (d1, d2, d3)
@@ -31,17 +35,19 @@ def generateNetworks(inputShape, numberOfFilters, filterSizes, latentSpaceLength
     decodeInput = keras.layers.Dense(input_shape=(o2,), units=reshapeLength, name="DecodeInput")
     decodeReshape = keras.layers.Reshape(target_shape=reshape, name='Reshape')
     decodeLayers = [decodeInput, decodeReshape]
-    if useDroput:
-        decodeLayers.append(keras.layers.Dropout(rate=0.5))
+    if dropoutRate > 0:
+        decodeLayers.append(keras.layers.Dropout(rate=dropoutRate))
     for i in range(len(filterSizes)-1, 0, -1):
-        decodeLayers.append(keras.layers.Conv2DTranspose(filters=numberOfFilters[i-1], kernel_size=filterSizes[i-1], padding='same', activation=hiddenActivation, name="%s%d" % ("Deconvolution_", i)))
-        decodeLayers.append(keras.layers.UpSampling2D(size=filterSizes[i-1]))
-        if useDroput:
-            decodeLayers.append(keras.layers.Dropout(rate=0.5))
+        decodeLayers.append(keras.layers.Conv2DTranspose(filters=numberOfFilters[i-1], strides= filterSizes[i-1], kernel_size=filterSizes[i-1], padding='same', activation=hiddenActivation, name="%s%d" % ("Deconvolution_", i)))
+        #decodeLayers.append(keras.layers.UpSampling2D(size=filterSizes[i-1]))
+        if dropoutRate > 0:
+            decodeLayers.append(keras.layers.Dropout(rate=dropoutRate))
     decodeLayers.append(keras.layers.Conv2DTranspose(filters=inputShape[2], kernel_size=(2, 2), padding='same', activation=tf.nn.sigmoid, name='DecodeOutput'))
 
     decode = keras.Sequential(decodeLayers)
     decode.compile(optimizer=tf.keras.optimizers.Adam(lr=learningRate), loss=imageLoss)
+
+    print(decode.output_shape)
 
     combinedLayers = []
     combinedLayers.extend(encodeLayers)
@@ -49,7 +55,29 @@ def generateNetworks(inputShape, numberOfFilters, filterSizes, latentSpaceLength
     combined = keras.Sequential(combinedLayers)
     combined.compile(optimizer=tf.keras.optimizers.Adam(lr=learningRate), loss=imageLoss)
 
+    print(combined.output_shape)
+
     return encode, decode, combined
+
+
+def encodeNetwork(encoderModel):
+    _, s1, s2, s3 = encoderModel.input_shape
+    inputShape = (s1, s2, s3)
+    numberOfFilters = []
+    filterSizes = []
+    _, latentSpaceLength = encoderModel.output_shape
+    useDropout=False
+    hiddenActivation=None
+    learningRate = keras.backend.eval(encoderModel.optimizer.lr)
+    for layer in encoderModel.layers:
+        if isinstance(layer, keras.layers.Conv2D):
+            numberOfFilters.append(layer.output_shape[3])
+            filterSizes.append((np.shape(layer.get_weights()[0])[0], np.shape(layer.get_weights()[0])[1]))
+        elif isinstance(layer, keras.layers.Dropout):
+            useDropout=True
+    possibleActivations = [tf.nn.relu, tf.nn.tanh, tf.nn.sigmoid, tf.nn.leaky_relu]
+    hiddenActivation = possibleActivations[random.randint(0, len(possibleActivations) - 1)]
+    return inputShape, numberOfFilters, filterSizes, latentSpaceLength, hiddenActivation, learningRate, useDropout
 
 
 def trainCNAE(model, dataSet, batchSize, iterations, verbose=True):
