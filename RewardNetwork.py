@@ -1,6 +1,6 @@
 from tensorflow import keras
 
-def initializeRewardNetwork(convolutionNetwork, controllerNetwork, latentSpaceLength, controllerOutputLength, nodesPerLayer, outputLength, lossFunction, dropoutRate=0, optimizer='rmsprop', hiddenActivation='relu', activation='sigmoid'):
+def initializeRewardNetwork(convolutionNetwork, controllerNetwork, latentSpaceLength, controllerOutputLength, nodesPerLayer, outputLength, dropoutRate=0, optimizer='rmsprop', hiddenActivation='relu', activation='sigmoid'):
 
     model = keras.Sequential()
     model.add(keras.layers.Concatenate([convolutionNetwork.output, controllerNetwork.output]))
@@ -12,6 +12,6 @@ def initializeRewardNetwork(convolutionNetwork, controllerNetwork, latentSpaceLe
     model.add(keras.layers.LSTM(nodesPerLayer[-1], return_sequences=False, activation=hiddenActivation))
     model.add(keras.layers.Dense(outputLength, activation=activation))
 
-    model.compile(optimizer=optimizer, loss=lossFunction)
+    model.compile(optimizer=optimizer, loss='mean_squared_error')
 
     return model
