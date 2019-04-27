@@ -6,7 +6,7 @@ import time
 
 def testGameplay(imageSize, outputs, saveInterval=0):
     inputShape = (imageSize[0], imageSize[1], 3)
-    vision, decode, cae, controller, reward = CNG.generateAllNetworks(imageSize=inputShape, numberOfFilters=[32, 32, 32], filterSizes=[(2, 2), (2, 2), (2, 2)], latentSpaceLength=128, controllerNodesPerLayer=[64, 32], controllerOutputLength=len(outputs), rewardNodesPerLayer=[16, 16], rewardOutputLength=2)
+    vision, decode, cae, controller, reward, trainer = CNG.generateAllNetworks(imageSize=inputShape, numberOfFilters=[32, 32, 32], filterSizes=[(2, 2), (2, 2), (2, 2)], latentSpaceLength=128, controllerNodesPerLayer=[64, 32], controllerOutputLength=len(outputs), rewardNodesPerLayer=[16, 16], rewardOutputLength=2)
     i = 0
     previousOutput = -1
     screenCaptures = []
@@ -22,7 +22,9 @@ def testGameplay(imageSize, outputs, saveInterval=0):
         if time.time() - lastSave >= saveInterval:
             screenCaptures.append(screen)
             actions.append(outputHex)
+            lastSave = time.time()
         R3U.printLoadBar(((i % 100) + 1)/100, 20)
         i = i + 1
 
-testGameplay((360, 200), ['w', 'a', 's', 'd'])
+keystrokes = list('wasd')
+testGameplay((360, 200), keystrokes)
