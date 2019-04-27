@@ -3,11 +3,10 @@ import KeyboardOutput as KeyOut
 import OutputConverter as OC
 import R3Utilities as R3U
 import numpy as np
-import time
 
 def testGameplay(imageSize, outputs):
     inputShape = (imageSize[0], imageSize[1], 3)
-    vision, decode, cae, controller, reward = CNG.generateAllNetworks(imageSize=inputShape, numberOfFilters=[32, 32, 32], filterSizes=[(2, 2), (2, 2), (2, 2)], latentSpaceLength=128, controllerNodesPerLayer=[64, 32], controllerOutputLength=len(outputs), rewardNodesPerLayer=[16, 16], rewardOutputLength=2)
+    vision, decode, cae, controller, reward = CNG.generateAllNetworks(imageSize=inputShape, numberOfFilters=[32, 32, 32], filterSizes=[(2, 2), (2, 2), (2, 2)], latentSpaceLength=128, controllerNodesPerLayer=[64, 32], controllerOutputLength=len(outputs), rewardNodesPerLayer=[16, 16], rewardOutputLength=2, rewardLossFunction='mean_squared_error')
     i = 0
     previousOutput = -1
     while True:
