@@ -24,8 +24,6 @@ def generateNetworks(inputShape, numberOfFilters, filterSizes, latentSpaceLength
     encode = keras.Sequential(encodeLayers)
     encode.compile(optimizer=tf.keras.optimizers.Adam(lr=learningRate), loss='mean_squared_error')
 
-    print(encode.output_shape)
-
     _, d1, d2, d3 = encode.layers[-3].output_shape
     reshape = (d1, d2, d3)
     reshapeLength = d1 * d2 * d3
@@ -47,15 +45,11 @@ def generateNetworks(inputShape, numberOfFilters, filterSizes, latentSpaceLength
     decode = keras.Sequential(decodeLayers)
     decode.compile(optimizer=tf.keras.optimizers.Adam(lr=learningRate), loss=imageLoss)
 
-    print(decode.output_shape)
-
     combinedLayers = []
     combinedLayers.extend(encodeLayers)
     combinedLayers.extend(decode.layers)
     combined = keras.Sequential(combinedLayers)
     combined.compile(optimizer=tf.keras.optimizers.Adam(lr=learningRate), loss=imageLoss)
-
-    print(combined.output_shape)
 
     return encode, decode, combined
 
