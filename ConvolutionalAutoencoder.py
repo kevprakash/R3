@@ -10,16 +10,17 @@ def imageLoss(img1, img2):
 
 
 def generateNetworks(inputShape, numberOfFilters, filterSizes, latentSpaceLength, hiddenActivation=tf.nn.relu, learningRate=0.0001, dropoutRate=0.1):
+    initializer = tf.initializers.random_normal
     assert len(numberOfFilters) == len(filterSizes)
-    inputLayer = keras.layers.Conv2D(input_shape=inputShape, filters=numberOfFilters[0], kernel_size=filterSizes[0], padding='same', activation=hiddenActivation, name='EncodeInput')
+    inputLayer = keras.layers.Conv2D(input_shape=inputShape, filters=numberOfFilters[0], kernel_size=filterSizes[0], padding='same', activation=hiddenActivation, name='EncodeInput', kernel_initializer=initializer)
     encodeLayers = [inputLayer]
     for i in range(1, len(filterSizes)):
         encodeLayers.append(keras.layers.MaxPool2D(pool_size=filterSizes[i-1], padding='same'))
         if dropoutRate > 0:
             encodeLayers.append(keras.layers.Dropout(rate=dropoutRate))
-        encodeLayers.append(keras.layers.Conv2D(filters=numberOfFilters[i], kernel_size=filterSizes[i], padding='same', activation=hiddenActivation, name="%s%d" % ("Convolution_", i)))
+        encodeLayers.append(keras.layers.Conv2D(filters=numberOfFilters[i], kernel_size=filterSizes[i], padding='same', activation=hiddenActivation, name="%s%d" % ("Convolution_", i), kernel_initializer=initializer))
     encodeLayers.append(keras.layers.Flatten())
-    encodeLayers.append(keras.layers.Dense(latentSpaceLength, activation=tf.nn.sigmoid, name="EncodeOutput"))
+    encodeLayers.append(keras.layers.Dense(latentSpaceLength, activation=tf.nn.sigmoid, name="EncodeOutput", kernel_initializer=initializer))
 
     encode = keras.Sequential(encodeLayers)
     encode.compile(optimizer=tf.keras.optimizers.Adam(lr=learningRate), loss='mean_squared_error')
@@ -30,17 +31,16 @@ def generateNetworks(inputShape, numberOfFilters, filterSizes, latentSpaceLength
 
     _, o2 = encode.output_shape
 
-    decodeInput = keras.layers.Dense(input_shape=(o2,), units=reshapeLength, name="DecodeInput")
+    decodeInput = keras.layers.Dense(input_shape=(o2,), units=reshapeLength, name="DecodeInput", kernel_initializer=initializer)
     decodeReshape = keras.layers.Reshape(target_shape=reshape, name='Reshape')
     decodeLayers = [decodeInput, decodeReshape]
     if dropoutRate > 0:
         decodeLayers.append(keras.layers.Dropout(rate=dropoutRate))
     for i in range(len(filterSizes)-1, 0, -1):
-        decodeLayers.append(keras.layers.Conv2DTranspose(filters=numberOfFilters[i-1], strides= filterSizes[i-1], kernel_size=filterSizes[i-1], padding='same', activation=hiddenActivation, name="%s%d" % ("Deconvolution_", i)))
-        #decodeLayers.append(keras.layers.UpSampling2D(size=filterSizes[i-1]))
+        decodeLayers.append(keras.layers.Conv2DTranspose(filters=numberOfFilters[i-1], strides= filterSizes[i-1], kernel_size=filterSizes[i-1], padding='same', activation=hiddenActivation, name="%s%d" % ("Deconvolution_", i), kernel_initializer=initializer))
         if dropoutRate > 0:
             decodeLayers.append(keras.layers.Dropout(rate=dropoutRate))
-    decodeLayers.append(keras.layers.Conv2DTranspose(filters=inputShape[2], kernel_size=(2, 2), padding='same', activation=tf.nn.sigmoid, name='DecodeOutput'))
+    decodeLayers.append(keras.layers.Conv2DTranspose(filters=inputShape[2], kernel_size=(2, 2), padding='same', activation=tf.nn.sigmoid, name='DecodeOutput', kernel_initializer=initializer))
 
     decode = keras.Sequential(decodeLayers)
     decode.compile(optimizer=tf.keras.optimizers.Adam(lr=learningRate), loss=imageLoss)

@@ -6,20 +6,21 @@ import R3Utilities as R3Util
 
 def initializeControllerNetwork(inputModel, nodesPerLayer, latentSpaceLength, outputLength, hiddenActivation=tf.nn.relu, activation=tf.nn.sigmoid, dropoutRate=0, optimizer='rmsprop'):
     "Generates LSTM networks given hyperparameters"
+    initializer = tf.initializers.random_normal
     network = keras.Sequential()
     inputModelLayers = inputModel.layers
     for l in inputModelLayers:
         network.add(l)
     network.add(keras.layers.Reshape((1, latentSpaceLength)))
     for x in range(0, len(nodesPerLayer) - 1):
-        network.add(keras.layers.LSTM(nodesPerLayer[x], return_sequences=True, activation=hiddenActivation))
+        network.add(keras.layers.LSTM(nodesPerLayer[x], return_sequences=True, activation=hiddenActivation, recurrent_initializer=initializer, kernel_initializer=initializer))
         print(x)
         if dropoutRate > 0:
             network.add(keras.layers.Dropout(rate=dropoutRate))
-    network.add(keras.layers.LSTM(nodesPerLayer[-1], return_sequences=False, activation=hiddenActivation))
+    network.add(keras.layers.LSTM(nodesPerLayer[-1], return_sequences=False, activation=hiddenActivation, recurrent_initializer=initializer, kernel_initializer=initializer))
     if dropoutRate > 0:
         network.add(keras.layers.Dropout(rate=dropoutRate))
-    network.add(keras.layers.Dense(outputLength, activation=activation))
+    network.add(keras.layers.Dense(outputLength, activation=activation, kernel_initializer=initializer))
     network.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     return network
 
