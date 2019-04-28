@@ -86,3 +86,12 @@ def convertCharToHex(char):
 def convertOutputToHex(inputArray, outputArray):
     x = convertOutputToChar(inputArray, outputArray)
     return convertCharToHex(x)
+
+def createNHotArray(arrayLength, indices):
+    ret = []
+    for i in range(arrayLength):
+        if i in indices:
+            ret.append(1.0)
+        else:
+            ret.append(0.0)
+    return ret

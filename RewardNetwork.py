@@ -1,29 +1,34 @@
-import  tensorflow as tf
+import tensorflow as tf
 from tensorflow import keras
+from keras.utils import plot_model
 
 def initializeRewardNetwork(convolutionNetwork, controllerNetwork, latentSpaceLength, controllerOutputLength, nodesPerLayer, outputLength, dropoutRate=0, optimizer='rmsprop', hiddenActivation='relu', activation='sigmoid'):
     initializer = tf.initializers.random_normal
-    model = keras.Sequential()
-    model.add(keras.layers.Concatenate([convolutionNetwork.output, controllerNetwork.output]))
 
-    sharedLayers = []
-    sharedLayers.append(keras.layers.Reshape((1, latentSpaceLength + controllerOutputLength)))
-    for i in range(0, len(nodesPerLayer) - 1):
-        sharedLayers.append(keras.layers.LSTM(nodesPerLayer[i], return_sequences=True, activation=hiddenActivation, recurrent_initializer=initializer, kernel_initializer=initializer))
+    c0, c1, c2, c3 = convolutionNetwork.input_shape
+    convolutionInput = keras.layers.Input(shape=(c0, c1, c2, c3), name="Convolution_Input")
+    convolution = keras.layers.TimeDistributed(convolutionNetwork, input_shape=(c0, c1, c2, c3))(convolutionInput)
+    convolutionFlattened = keras.layers.LSTM(latentSpaceLength, return_sequences=False, activation=hiddenActivation, recurrent_initializer=initializer, kernel_initializer=initializer)(convolution)
+    controller = controllerNetwork(convolutionInput)
+
+    sharedModel = keras.Sequential()
+    for i in range(0, len(nodesPerLayer)):
+        sharedModel.add(keras.layers.Dense(nodesPerLayer[i], activation=hiddenActivation, kernel_initializer=initializer))
         if dropoutRate > 0:
-            sharedLayers.append(keras.layers.Dropout(rate=dropoutRate))
-    sharedLayers.append(keras.layers.LSTM(nodesPerLayer[-1], return_sequences=False, activation=hiddenActivation, recurrent_initializer=initializer, kernel_initializer=initializer))
-    sharedLayers.append(keras.layers.Dense(outputLength, activation=activation, kernel_initializer=initializer))
+            sharedModel.add(keras.layers.Dropout(rate=dropoutRate))
+    sharedModel.add(keras.layers.Dense(outputLength, activation=activation, kernel_initializer=initializer))
 
-    for layer in sharedLayers:
-        model.add(layer)
+    mergeModel = keras.layers.concatenate([convolutionFlattened, controller])
+    mergeModel = sharedModel(mergeModel)
+
+    trainerInput = keras.layers.Input(shape=(controllerOutputLength,), dtype='float32', name="Trainer_Input")
+    mergeTrainer = keras.layers.concatenate([convolutionFlattened, trainerInput])
+    mergeTrainer = sharedModel(mergeTrainer)
+
+    model = keras.Model(inputs=convolutionInput, outputs=sharedModel.output)
+    trainer = keras.Model(inputs=[convolutionInput, trainerInput], outputs=sharedModel.output)
+
     model.compile(optimizer=optimizer, loss='mean_squared_error')
-
-    inputLayer = keras.layers.Input(shape=(controllerOutputLength,), dtype='float32')
-    x = keras.layers.concatenate([convolutionNetwork.output, inputLayer])
-    for layer in sharedLayers:
-        x = layer(x)
-    trainer = keras.Model(inputs=[convolutionNetwork.input, inputLayer], outputs=x)
 
     return model, trainer
 

@@ -9,9 +9,8 @@ def initializeControllerNetwork(inputModel, nodesPerLayer, latentSpaceLength, ou
     initializer = tf.initializers.random_normal
     network = keras.Sequential()
     inputModelLayers = inputModel.layers
-    for l in inputModelLayers:
-        network.add(l)
-    network.add(keras.layers.Reshape((1, latentSpaceLength)))
+    network.add(keras.layers.TimeDistributed(inputModel, input_shape=(None, inputModel.input_shape[1], inputModel.input_shape[2], inputModel.input_shape[3])))
+    network.add(keras.layers.TimeDistributed(keras.layers.Reshape((latentSpaceLength,))))
     for x in range(0, len(nodesPerLayer) - 1):
         network.add(keras.layers.LSTM(nodesPerLayer[x], return_sequences=True, activation=hiddenActivation, recurrent_initializer=initializer, kernel_initializer=initializer))
         print(x)
