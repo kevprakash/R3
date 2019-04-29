@@ -1,8 +1,8 @@
 import tensorflow as tf
+from keras.callbacks import TensorBoard
 from tensorflow import keras
-from keras.utils import plot_model
 
-def initializeRewardNetwork(convolutionNetwork, controllerNetwork, latentSpaceLength, controllerOutputLength, nodesPerLayer, outputLength, dropoutRate=0, optimizer='rmsprop', hiddenActivation='relu', activation='sigmoid'):
+def initializeRewardNetwork(convolutionNetwork, controllerNetwork, latentSpaceLength, controllerOutputLength, nodesPerLayer, outputLength, dropoutRate=0, optimizer='rmsprop', hiddenActivation='relu', activation='relu'):
     initializer = tf.initializers.random_normal
 
     c0, c1, c2, c3 = convolutionNetwork.input_shape

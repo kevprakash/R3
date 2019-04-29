@@ -74,7 +74,8 @@ def encodeNetwork(encoderModel):
     return inputShape, numberOfFilters, filterSizes, latentSpaceLength, hiddenActivation, learningRate, useDropout
 
 
-def trainCNAE(model, dataSet, batchSize, iterations, verbose=True):
+def trainCNAE(model, dataSet, batchSize=1, iterations=1, verbose=False):
+    print("Training Convolutional Autoencoder")
     model.fit(dataSet, dataSet, batch_size=batchSize, epochs=iterations, verbose=verbose)
 
 
