@@ -43,7 +43,7 @@ def generateNetworks(inputShape, numberOfFilters, filterSizes, latentSpaceLength
     decodeLayers.append(keras.layers.Conv2DTranspose(filters=inputShape[2], kernel_size=(2, 2), padding='same', activation=tf.nn.sigmoid, name='DecodeOutput', kernel_initializer=initializer))
 
     decode = keras.Sequential(decodeLayers)
-    decode.compile(optimizer=tf.keras.optimizers.Adam(lr=learningRate), loss=imageLoss)
+    #decode.compile(optimizer=tf.keras.optimizers.Adam(lr=learningRate), loss=imageLoss)
 
     combinedLayers = []
     combinedLayers.extend(encodeLayers)

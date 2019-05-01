@@ -7,7 +7,7 @@ import random
 def convertReward(rawReward, conversionFunction):
     return conversionFunction(rawReward)
 
-def trainRewardNetwork(rewardNetwork, screenCaptures, rewards, subsequenceLength=5, verbose=False):
+def trainRewardNetwork(rewardNetwork, screenCaptures, rewards, subsequenceLength=5, epochs=5, verbose=False):
     print("Training Reward Network")
     i = 0
     x = None
@@ -31,9 +31,9 @@ def trainRewardNetwork(rewardNetwork, screenCaptures, rewards, subsequenceLength
             y = np.append(y, rewards[end - 1], axis=0)
         i = i + 1
 
-    rewardNetwork.fit(x, y, batch_size=1, verbose=verbose, shuffle=False)
+    rewardNetwork.fit(x, y, batch_size=1, epochs=epochs, verbose=verbose, shuffle=False)
 
-def trainControllerNetwork(controllerNetwork, screenCaptures, correctActions, subsequenceLength=5, verbose=False):
+def trainControllerNetwork(controllerNetwork, screenCaptures, correctActions, subsequenceLength=5, epochs=5, verbose=False):
     print("Training Controller Network")
     i = 0
     x = None
@@ -58,7 +58,7 @@ def trainControllerNetwork(controllerNetwork, screenCaptures, correctActions, su
         i = i + 1
 
 
-    controllerNetwork.fit(x, y, batch_size=1, verbose=verbose, shuffle=False)
+    controllerNetwork.fit(x, y, batch_size=1, epochs=epochs, verbose=verbose, shuffle=False)
 
 def predictCorrectAction(trainerNetwork, screenCaptures, numberOfPossibleActions, rewardFunction, subsequenceLength=20):
     print("Predicting Correct Course of Action")
@@ -85,13 +85,24 @@ def predictCorrectAction(trainerNetwork, screenCaptures, numberOfPossibleActions
                     maxReward = reward
                     maxRewardIndex = j
         actions.append(maxRewardIndex)
+        R3U.printLoadBar((i + 1)/len(screenCaptures[0]), length=25)
 
     return actions
 
-def trainNetworks(convolutionalAutoencoder, controllerNetwork, rewardNetwork, trainerNetwork, screenCaptures, rewards, possibleActions, rewardFunction, verbose=False, subsequenceLengthTraining=5, subsequenceLengthPrediction=20):
+def trainNetworks(convolutionalAutoencoder, controllerNetwork, rewardNetwork, trainerNetwork, screenCaptures, rewards, possibleActions, rewardFunction, verbose=False, epochs=5, subsequenceLengthTraining=5, subsequenceLengthPrediction=20):
     print("Beginning Training Sequence")
-    CAE.trainCNAE(convolutionalAutoencoder, screenCaptures[0], verbose=verbose)
-    trainRewardNetwork(rewardNetwork, screenCaptures, rewards, subsequenceLength=subsequenceLengthTraining, verbose=verbose)
+    CAE.trainCNAE(convolutionalAutoencoder, screenCaptures[0], verbose=verbose, iterations=epochs)
+    convWeights = convolutionalAutoencoder.layers
+    contWeights = controllerNetwork.layers
+    '''for w in convWeights:
+        w.trainable = False
+    for w in contWeights:
+        w.trainable = False'''
+    trainRewardNetwork(rewardNetwork, screenCaptures, rewards, subsequenceLength=subsequenceLengthTraining, epochs=epochs, verbose=verbose)
     correctActions = predictCorrectAction(trainerNetwork, screenCaptures, possibleActions, rewardFunction, subsequenceLength=subsequenceLengthPrediction)
-    trainControllerNetwork(controllerNetwork, screenCaptures, correctActions, subsequenceLength=subsequenceLengthTraining, verbose=verbose)
+    #for w in contWeights:
+    #    w.trainable = True
+    trainControllerNetwork(controllerNetwork, screenCaptures, correctActions, subsequenceLength=subsequenceLengthTraining, epochs=epochs, verbose=verbose)
+    #for w in convWeights:
+    #    w.trainable = True
     print("Finished Training Sequence")
