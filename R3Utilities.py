@@ -48,22 +48,26 @@ def readMemoryAddress(processID=4044, memoryAddress=0x1000000):
     OpenProcess = windll.kernel32.OpenProcess
     ReadProcessMemory = windll.kernel32.ReadProcessMemory
     CloseHandle = windll.kernel32.CloseHandle
-    PROCESS_ALL_ACCESS = 0x1F0FFF
+    PROCESS_ALL_ACCESS = (0x000F0000 | 0x00100000 | 0xFFF)
+    PROCESS_VM_READ = 0x0010
     pid = processID
     address = memoryAddress
 
-    buffer = ctypes.c_ulong()
+    buffer = c_ulong()
+    #buffer = c_wchar_p("Test Test Test")
+    #bufferSize = len(buffer.value)
     bufferSize = ctypes.sizeof(buffer)
-    bytesRead = c_ulong(0)
+    bytesRead = c_ulong()
 
-
-    processHandle = OpenProcess(PROCESS_ALL_ACCESS, False, pid)
-    if ReadProcessMemory(processHandle, address, ctypes.byref(buffer), bufferSize, ctypes.byref(bytesRead)):
-        print("Success:", buffer.value)
-    else:
-        print("Failed.")
+    processHandle = OpenProcess(PROCESS_VM_READ, False, pid)
+    ReadProcessMemory(processHandle, c_void_p(address), ctypes.byref(buffer), bufferSize, ctypes.byref(bytesRead))
+    #if ReadProcessMemory(processHandle, c_void_p(address), ctypes.byref(buffer), bufferSize, ctypes.byref(bytesRead)):
+        #print("Success:", buffer.value)
+    #else:
+        #print("Failed.")
 
     CloseHandle(processHandle)
+    return buffer.value
 
 
 def readMemoryTest():
@@ -78,9 +82,14 @@ def convertCharToHex(char):
     dict = {
         'q':0x10, 'w':0x11, 'e':0x12, 'r':0x13, 't':0x14, 'y':0x15, 'u':0x16, 'i':0x17, 'o':0x18, 'p':0x19,
         'a': 0x1E, 's': 0x1F, 'd': 0x20, 'f': 0x21, 'g': 0x22, 'h': 0x23, 'j': 0x24, 'k': 0x25, 'l': 0x26,
-        'z': 0x2c, 'x': 0x2d, 'c': 0x2e, 'v': 0x2f, 'b': 0x30, 'n': 0x31, 'm': 0x32
+        'z': 0x2c, 'x': 0x2d, 'c': 0x2e, 'v': 0x2f, 'b': 0x30, 'n': 0x31, 'm': 0x32,
+        "space": 0x39, "lshift": 0x2A, "lctrl": 0x1D, "lalt": 0x38, "tab":0x0F, "lmouse": 0x02, "rmouse": 0x08, "midmouse": 0x20,
+        "up": 0xC8, "left": 0xCB, "right": 0xCD, "down": 0xD0
     }
-    return dict[char]
+    mouse = False
+    if char == "lmouse" or char == "rmouse" or char == "midmouse":
+        mouse = True
+    return dict[char], mouse
 
 
 def convertOutputToHex(inputArray, outputArray):

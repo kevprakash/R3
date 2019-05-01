@@ -6,12 +6,15 @@ import R3Utilities as R3U
 import numpy as np
 import time
 
-def testRewardFunction(rawInput):
-    return rawInput[0] - rawInput[1]
+def testRewardFunction(rawInputs):
+    prod = 1
+    for raw in rawInputs:
+        prod = prod * raw
+    return prod
 
-def testGameplay(imageSize, outputs, iterations=1, processingInterval=0.25, processingIterations=60, maxSequenceLength=8):
+def testGameplay(imageSize, outputs, rewardMemoryAddresses, processID, iterations=1, processingInterval=0.25, processingIterations=60, maxSequenceLength=8):
     inputShape = (imageSize[0], imageSize[1], 3)
-    vision, decode, cae, controller, reward, trainer = CNG.generateAllNetworks(imageSize=inputShape, numberOfFilters=[16, 16, 16], filterSizes=[(2, 2), (2, 2), (2, 2)], latentSpaceLength=128, controllerNodesPerLayer=[16, 8], controllerOutputLength=len(outputs), rewardNodesPerLayer=[16, 8], rewardOutputLength=2)
+    vision, decode, cae, controller, reward, trainer = CNG.generateAllNetworks(imageSize=inputShape, numberOfFilters=[16, 16, 16], filterSizes=[(2, 2), (2, 2), (2, 2)], latentSpaceLength=128, controllerNodesPerLayer=[16, 8], controllerOutputLength=len(outputs), rewardNodesPerLayer=[16, 8], rewardOutputLength=len(rewardMemoryAddresses))
     for count in range(iterations):
         print("Loop", count + 1)
 
@@ -21,7 +24,7 @@ def testGameplay(imageSize, outputs, iterations=1, processingInterval=0.25, proc
 
         screenCaptures = np.zeros(shape=(1, processingIterations, imageSize[0], imageSize[1], 3))
         screenCapturesLimited = np.zeros(shape=(1, maxSequenceLength, imageSize[0], imageSize[1], 3))
-        rewards = np.zeros(shape=(processingIterations, 1, 2))
+        rewards = np.zeros(shape=(processingIterations, 1, len(rewardMemoryAddresses)))
         while i < processingIterations:
             if time.time() - lastSave >= processingInterval:
                 screen = R3U.takeScreenShot(0, 0, 1920, 1080, imageSize)
@@ -34,11 +37,15 @@ def testGameplay(imageSize, outputs, iterations=1, processingInterval=0.25, proc
                 screenCapturesLimited = np.delete(screenCapturesLimited, 0, axis=1)
 
                 output = controller.predict(screenCapturesLimited)
-                outputHex = R3U.convertOutputToHex(output[-1], outputs)
-                #KeyOut.performOutput(outputHex, previousOutput)
+                outputHex, isMouse = R3U.convertOutputToHex(output[-1], outputs)
+                KeyOut.performOutput(outputHex, isMouse, previousOutput)
                 previousOutput = outputHex
 
-                rewards = np.append(rewards, [[[i%10, (i**2)%10]]], axis=0)
+                temp = []
+                for addr in range(len(rewardMemoryAddresses)):
+                    temp.append(R3U.readMemoryAddress(processID, rewardMemoryAddresses[addr]))
+
+                rewards = np.append(rewards, [[temp]], axis=0)
                 rewards = np.delete(rewards, 0, axis=0)
                 lastSave = time.time()
                 i = i + 1
@@ -48,5 +55,8 @@ def testGameplay(imageSize, outputs, iterations=1, processingInterval=0.25, proc
             verbose = True
         Trainer.trainNetworks(cae, controller, reward, trainer, screenCaptures, rewards, len(outputs), testRewardFunction, epochs=5, verbose=verbose, subsequenceLengthTraining=maxSequenceLength)
 
-keystrokes = list('wasd')
-testGameplay((360, 200), keystrokes, iterations=10, processingInterval=0.25, processingIterations=30, maxSequenceLength=8)
+keystrokes = list("wasdqgfe")
+keystrokes.extend(["lmouse", "rmouse", "lshift", "tab"])
+keystrokes = ["lmouse", "rmouse"]
+rewardMemoryAddresses = [0x93077118, 0x930770E4]
+testGameplay((360, 200), keystrokes, rewardMemoryAddresses, processID=0x6A0, iterations=600, processingInterval=0.1, processingIterations=10, maxSequenceLength=12)
