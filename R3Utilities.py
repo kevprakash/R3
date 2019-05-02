@@ -3,6 +3,7 @@ from ctypes import *
 from ctypes.wintypes import *
 from PIL import Image
 import numpy as np
+import random
 import pyscreenshot as ImageGrab
 
 def takeScreenShot(X1, Y1, X2, Y2, outputSize):
@@ -26,7 +27,6 @@ def printLoadBar (percentage, length, endString=""):
                 char = ">"
             else:
                 char = "="
-        #print(char, tempIndex/length, (tempIndex+1)/length, percentage)
         bar += char
     bar += "]"
     if percentage == 0:
@@ -75,7 +75,13 @@ def readMemoryTest():
 
 
 def convertOutputToChar(inputArray, outputArray):
-    return outputArray[np.argmax(inputArray)]
+    outputIndex = 0
+    for i in range(len(outputArray)):
+        rand1 = random.uniform(0, inputArray[outputIndex])
+        rand2 = random.uniform(0, inputArray[i])
+        if rand2 > rand1:
+            outputIndex = i
+    return outputArray[outputIndex]
 
 
 def convertCharToHex(char):
@@ -97,10 +103,12 @@ def convertOutputToHex(inputArray, outputArray):
     return convertCharToHex(x)
 
 def createNHotArray(arrayLength, indices):
-    ret = []
+    ret = np.zeros(shape=(1,))
     for i in range(arrayLength):
         if i in indices:
-            ret.append(1.0)
+            ret = np.append(ret, [1.0], axis=0)
         else:
-            ret.append(0.0)
+            ret = np.append(ret, [0.0], axis=0)
+        if i == 0:
+            ret = np.delete(ret, 0)
     return ret
