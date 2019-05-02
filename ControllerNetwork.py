@@ -4,7 +4,7 @@ import tensorflow as tf
 from tensorflow import keras
 import R3Utilities as R3Util
 
-def initializeControllerNetwork(inputModel, nodesPerLayer, latentSpaceLength, outputLength, hiddenActivation=tf.nn.relu, activation=tf.nn.sigmoid, dropoutRate=0, optimizer='rmsprop'):
+def initializeControllerNetwork(inputModel, nodesPerLayer, latentSpaceLength, outputLength, hiddenActivation=tf.nn.relu, dropoutRate=0, optimizer='rmsprop'):
     "Generates LSTM networks given hyperparameters"
     initializer = tf.initializers.random_normal
     network = keras.Sequential()
@@ -19,7 +19,7 @@ def initializeControllerNetwork(inputModel, nodesPerLayer, latentSpaceLength, ou
     network.add(keras.layers.LSTM(nodesPerLayer[-1], return_sequences=False, activation=hiddenActivation, recurrent_initializer=initializer, kernel_initializer=initializer))
     if dropoutRate > 0:
         network.add(keras.layers.Dropout(rate=dropoutRate))
-    network.add(keras.layers.Dense(outputLength, activation=activation, kernel_initializer=initializer))
+    network.add(keras.layers.Dense(outputLength, activation=tf.nn.softmax, kernel_initializer=initializer))
     network.compile(optimizer=optimizer, loss='sparse_categorical_crossentropy', metrics=['accuracy'])
     return network
 

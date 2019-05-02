@@ -47,7 +47,6 @@ def ReleaseKey(hexKeyCode):
     ii_.ki = KeyBdInput(0, hexKeyCode, 0x0008 | 0x0002, 0, ctypes.pointer(extra))
     x = Input(ctypes.c_ulong(1), ii_)
     ctypes.windll.user32.SendInput(1, ctypes.pointer(x), ctypes.sizeof(x))
-    print("Released key")
 
 def click(hexKeyCode):
     downCodeToReleaseCode = {
@@ -57,10 +56,10 @@ def click(hexKeyCode):
     ctypes.windll.user32.mouse_event(downCodeToReleaseCode[hexKeyCode], 0, 0, 0, 0)
 
 def performOutput(hexKeyCode, isMouse, previousHexKeyCode, delay=0):
+    if (previousHexKeyCode != -1 and previousHexKeyCode != hexKeyCode):
+        ReleaseKey(previousHexKeyCode)
     if isMouse:
         click(hexKeyCode)
     else:
-        if previousHexKeyCode != -1 and previousHexKeyCode != hexKeyCode:
-           ReleaseKey(previousHexKeyCode)
         PressKey(hexKeyCode)
     time.sleep(delay)

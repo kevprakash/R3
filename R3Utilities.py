@@ -62,7 +62,7 @@ def readMemoryAddress(processID=4044, memoryAddress=0x1000000):
     processHandle = OpenProcess(PROCESS_VM_READ, False, pid)
     ReadProcessMemory(processHandle, c_void_p(address), ctypes.byref(buffer), bufferSize, ctypes.byref(bytesRead))
     #if ReadProcessMemory(processHandle, c_void_p(address), ctypes.byref(buffer), bufferSize, ctypes.byref(bytesRead)):
-        #print("Success:", buffer.value)
+        #print("Success:", buffer.value) awa  f       fffff
     #else:
         #print("Failed.")
 
