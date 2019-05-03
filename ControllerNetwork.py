@@ -6,8 +6,8 @@ import R3Utilities as R3Util
 
 def initializeControllerNetwork(inputModel, nodesPerLayer, latentSpaceLength, outputLength, hiddenActivation=tf.nn.relu, dropoutRate=0, optimizer='rmsprop'):
     "Generates LSTM networks given hyperparameters"
-    initializer = tf.initializers.random_normal
-    network = keras.Sequential()
+    initializer = tf.initializers.random_normal #makes weights random when you make a layer
+    network = keras.Sequential() #each layer in the model will have a unique layer to pass their info into
     inputModelLayers = inputModel.layers
     network.add(keras.layers.TimeDistributed(inputModel, input_shape=(None, inputModel.input_shape[1], inputModel.input_shape[2], inputModel.input_shape[3])))
     network.add(keras.layers.TimeDistributed(keras.layers.Reshape((latentSpaceLength,))))
