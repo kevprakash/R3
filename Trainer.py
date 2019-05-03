@@ -1,6 +1,7 @@
 import numpy as np
 import R3Utilities as R3U
 import ConvolutionalAutoencoder as CAE
+import random
 
 def trainRewardNetwork(rewardNetwork, screenCaptures, rewards, rewardFunction, rateModifier=5, subsequenceLength=5, epochs=5, verbose=False):
     x = None
@@ -18,7 +19,7 @@ def trainRewardNetwork(rewardNetwork, screenCaptures, rewards, rewardFunction, r
             else:
                 x = np.append(x, subsequence, axis=0)
 
-            rewardForSequence = rewardFunction(rewards, max(0, i - subsequenceLength), i + 1)
+            rewardForSequence = rewardFunction(rewards, max(0, i - subsequenceLength), min(i + subsequenceLength, len(screenCaptures[0])))
             if y is None:
                 y = np.array([[rewardForSequence]])
             else:
@@ -34,6 +35,7 @@ def trainControllerNetwork(controllerNetwork, screenCaptures, correctActions, ra
     _, _, w, h, d = np.shape(screenCaptures)
     subsequence = np.zeros(shape=(1, subsequenceLength, w, h, d))
     print("Creating Training Data for Controller Network")
+    actionIndex = 0
     for i in range(len(screenCaptures[0])):
         subsequence = np.append(subsequence, [[screenCaptures[0][i]]], axis=1)
         subsequence = np.delete(subsequence, 0, axis=1)
@@ -44,9 +46,10 @@ def trainControllerNetwork(controllerNetwork, screenCaptures, correctActions, ra
                 x = np.append(x, subsequence, axis=0)
 
             if y is None:
-                y = np.array([correctActions[i]])
+                y = np.array([correctActions[actionIndex]])
             else:
-                y = np.append(y, [correctActions[i]], axis=0)
+                y = np.append(y, [correctActions[actionIndex]], axis=0)
+            actionIndex = actionIndex + 1
             R3U.printLoadBar((i + 1)/len(screenCaptures[0]), length=25)
 
     print("Training Controller Network")
@@ -61,15 +64,17 @@ def predictCorrectAction(trainerNetwork, screenCaptures, numberOfPossibleActions
         states = np.append(states, [[screenCaptures[0][i]]], axis=1)
         states = np.delete(states, 0, axis=1)
 
+        prevReward = 0
         if i % rateModifier == rateModifier - 1:
             maxReward = 0
             maxRewardIndex = 0
             for j in range(numberOfPossibleActions):
                 testAction = R3U.createNHotArray(numberOfPossibleActions, [j])
                 testReward = trainerNetwork.predict_on_batch([states, np.array([testAction])])
-                if testReward > maxReward:
+                if testReward > maxReward or (maxReward < 0 and (i > 0 and maxReward >= prevReward) and random.uniform(0, 1) < 0.5):
                     maxRewardIndex = j
                     maxReward = testReward
+            prevReward = maxReward
             R3U.printLoadBar((i + 1)/len(screenCaptures[0]), length=25)
 
             actions.append(maxRewardIndex)

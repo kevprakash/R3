@@ -7,35 +7,60 @@ import time
 
 def testRewardFunction(rawInputs, startTime, stopTime):
     reward = 0
-    prevGeo = 0
-    prevCombinedHealth = 17
+    prevGeo = rawInputs[startTime][0]
+    prevCombinedHealth = rawInputs[startTime][1] + rawInputs[startTime][2]
     prevX = -1
     for i in range(startTime, stopTime):
         if rawInputs[i][1] > 0:
-            reward = reward + (rawInputs[i][0] - prevGeo) * (prevCombinedHealth - (rawInputs[i][1] + rawInputs[i][2]))
+            if rawInputs[i][0] - prevGeo > 0:
+                reward = max(reward, 0)
+            reward = reward + ((rawInputs[i][0] - prevGeo) * (prevCombinedHealth - (rawInputs[i][1] + rawInputs[i][2]) + 1)) * 10
+            healthDelta = prevCombinedHealth - (rawInputs[i][1] + rawInputs[i][2])
             prevGeo = rawInputs[i][0]
             prevCombinedHealth = rawInputs[i][1] + rawInputs[i][2]
 
             if prevX > 0:
-                if prevX == rawInputs[i][3]:
-                    if reward < 0:
-                        reward = reward * 1.1
-                    elif reward < 2:
+                if prevX == rawInputs[i][3] and healthDelta < 1:
+                    if reward < 2:
                         reward = reward - 1
                     else:
                         reward = reward/2
                 else:
-                    reward = reward + 1
+                    reward = reward + 1 + healthDelta * 2
             prevX = rawInputs[i][3]
 
         else:
-            reward = 0
+            reward = min(-prevGeo, -100)
+            prevGeo = 0
+            prevCombinedHealth = rawInputs[0][1] + rawInputs[0][2]
+            prevX = -1
 
     return reward
 
-def testGameplay(imageSize, outputs, rewardMemoryAddresses, processID, iterations=1, processingInterval=0.25, processingIterations=60, maxSequenceLength=8):
+
+def testResetScript():
+    time.sleep(1)
+
+    KeyOut.PressKey(R3U.convertCharToHex('w')[0])
+    KeyOut.PressKey(R3U.convertCharToHex('f')[0])
+    time.sleep(5)
+    KeyOut.ReleaseKey(R3U.convertCharToHex('w')[0])
+    KeyOut.ReleaseKey(R3U.convertCharToHex('f')[0])
+
+    time.sleep(5)
+    KeyOut.PressKey(R3U.convertCharToHex('w')[0])
+    KeyOut.ReleaseKey(R3U.convertCharToHex('w')[0])
+    time.sleep(0.5)
+    KeyOut.PressKey(R3U.convertCharToHex('w')[0])
+    KeyOut.ReleaseKey(R3U.convertCharToHex('w')[0])
+
+    time.sleep(1)
+    KeyOut.click(R3U.convertCharToHex("lmouse")[0])
+
+
+def testGameplay(imageSize, outputs, rewardMemoryAddresses, processID, resetScript, iterations=1, processingInterval=0.25, processingIterations=60, maxSequenceLength=8):
     inputShape = (imageSize[0], imageSize[1], 3)
-    vision, decode, cae, controller, reward, trainer = CNG.generateAllNetworks(imageSize=inputShape, numberOfFilters=[16, 16, 16], filterSizes=[(5, 5), (4, 4), (2, 2)], latentSpaceLength=128, controllerNodesPerLayer=[32], controllerOutputLength=len(outputs), rewardNodesPerLayer=[32], rewardOutputLength=1)
+    vision, decode, cae, controller, reward, trainer = CNG.generateAllNetworks(imageSize=inputShape, numberOfFilters=[32, 32, 32], filterSizes=[(5, 5), (4, 4), (2, 2)], latentSpaceLength=128, controllerNodesPerLayer=[32], controllerOutputLength=len(outputs), rewardNodesPerLayer=[32], rewardOutputLength=1)
     for count in range(iterations):
         print("Loop", count + 1)
 
@@ -61,7 +86,8 @@ def testGameplay(imageSize, outputs, rewardMemoryAddresses, processID, iteration
 
                 outputHex, isMouse = R3U.convertOutputToHex(output[-1], outputs)
                 KeyOut.performOutput(outputHex, isMouse, previousOutput)
-                previousOutput = outputHex
+                if not isMouse:
+                    previousOutput = outputHex
 
                 temp = []
                 for addr in range(len(rewardMemoryAddresses)):
@@ -80,15 +106,12 @@ def testGameplay(imageSize, outputs, rewardMemoryAddresses, processID, iteration
             verbose = True
         KeyOut.ReleaseKey(previousOutput)
 
-        KeyOut.PressKey(R3U.convertCharToHex('w')[0])
-        KeyOut.PressKey(R3U.convertCharToHex('f')[0])
-        time.sleep(5)
-        KeyOut.ReleaseKey(R3U.convertCharToHex('w')[0])
-        KeyOut.ReleaseKey(R3U.convertCharToHex('f')[0])
+        resetScript()
 
         Trainer.trainNetworks(cae, controller, reward, trainer, screenCaptures, rewards, len(outputs), testRewardFunction, epochs=5, verbose=verbose, subsequenceLength=maxSequenceLength)
 
+
 keystrokes = list("wasdqfe")
 keystrokes.extend(["lmouse", "rmouse", "lshift", "space"])
-rewardMemoryAddresses = [0x93CAD118, 0x93CAD0E4, 0x0423CBD0, 0x04D9928C] #Geo, Health, Shield, xCoord in Hollow Knight
-testGameplay((360, 200), keystrokes, rewardMemoryAddresses, processID=0x1928, iterations=100000, processingInterval=0.15, processingIterations=20, maxSequenceLength=20)
+rewardMemoryAddresses = [0x93BAA118, 0x93BAA0E4, 0x93BAA0F0, 0x2792AF70] #Geo, Health, Shield, xCoord in Hollow Knight
+testGameplay((360, 200), keystrokes, rewardMemoryAddresses, processID=0x135C, resetScript=testResetScript, iterations=100000, processingInterval=0.15, processingIterations=200, maxSequenceLength=20)

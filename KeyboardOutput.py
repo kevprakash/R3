@@ -56,7 +56,7 @@ def click(hexKeyCode):
     ctypes.windll.user32.mouse_event(downCodeToReleaseCode[hexKeyCode], 0, 0, 0, 0)
 
 def performOutput(hexKeyCode, isMouse, previousHexKeyCode, delay=0):
-    if (previousHexKeyCode != -1 and previousHexKeyCode != hexKeyCode):
+    if previousHexKeyCode != -1 and previousHexKeyCode != hexKeyCode and not isMouse:
         ReleaseKey(previousHexKeyCode)
     if isMouse:
         click(hexKeyCode)
