@@ -118,13 +118,14 @@ def createNHotArray(arrayLength, indices):
     return ret
 
 
-def generateQArray(rawRewards, rewardFunction, learningRate=0.8):
+def generateQArray(rawRewards, rewardFunction, discountRate=0.8):
     q = None
+    print("Generating Q Array")
     for i in range(len(rawRewards)):
         sum = 0
-        lookAheadLen = math.log(0.01, learningRate) #limit how far the qArray looks ahead for computational efficiency
+        lookAheadLen = math.log(0.01, discountRate) #limit how far the qArray looks ahead for computational efficiency
         for j in range(i, min(int(i + lookAheadLen + 1), len(rawRewards))):
-            sum = sum + rewardFunction(rawRewards, j) * (learningRate ** (j - i))
+            sum = sum + rewardFunction(rawRewards, j) * (discountRate ** (j - i))
         if q is None:
             q = np.array([sum])
         else:

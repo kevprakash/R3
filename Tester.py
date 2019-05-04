@@ -15,6 +15,8 @@ def testRewardFunction(rawInputs, index):
     prevRaw = rawInputs[index - 1]
     if raw[3] == prevRaw[3]:
         reward = reward - 5
+    else:
+        reward = reward + 1
     reward = reward + ((raw[1] + raw[2]) - (prevRaw[1] + prevRaw[2])) * 20
     reward = reward + (raw[0] - prevRaw[0]) * 50
 
@@ -91,10 +93,11 @@ def testGameplay(imageSize, outputs, rewardMemoryAddresses, processID, resetScri
 
         resetScript()
 
+        #print(R3U.generateQArray(rewards, testRewardFunction))
         Trainer.trainNetworks(cae, controller, reward, trainer, screenCaptures, rewards, len(outputs), testRewardFunction, epochs=5, verbose=verbose, subsequenceLength=maxSequenceLength)
 
 
 keystrokes = list("wasdqfe")
 keystrokes.extend(["lmouse", "rmouse", "lshift", "space"])
-rewardMemoryAddresses = [0x93BD6118, 0x93BD60E4, 0x93BD60F0, 0x14186188] #Geo, Health, Shield, xCoord in Hollow Knight
-testGameplay((360, 200), keystrokes, rewardMemoryAddresses, processID=0x3270, resetScript=testResetScript, iterations=100000, processingInterval=0.15, processingIterations=200, maxSequenceLength=20)
+rewardMemoryAddresses = [0x9ED3E118, 0x9ED3E0E4, 0x9ED3E0F0, 0x158D7438] #Geo, Health, Shield, xCoord in Hollow Knight
+testGameplay((360, 200), keystrokes, rewardMemoryAddresses, processID=0x3954, resetScript=testResetScript, iterations=100000, processingInterval=0.15, processingIterations=150, maxSequenceLength=20)

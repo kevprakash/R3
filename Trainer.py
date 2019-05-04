@@ -2,6 +2,7 @@ import numpy as np
 import R3Utilities as R3U
 import ConvolutionalAutoencoder as CAE
 import random
+import time
 
 def trainRewardNetwork(rewardNetwork, screenCaptures, rewards, rewardFunction, subsequenceLength=5, epochs=5, verbose=False):
     x = None
@@ -51,6 +52,7 @@ def trainControllerNetwork(controllerNetwork, screenCaptures, correctActions, su
     print("Training Controller Network")
     controllerNetwork.fit(x, y, batch_size=1, epochs=epochs, verbose=verbose, shuffle=False)
 
+
 def predictCorrectAction(trainerNetwork, screenCaptures, numberOfPossibleActions, subsequenceLength=20):
     print("Predicting Correct Course of Action")
     _, _, x, y, z = np.shape(screenCaptures)
@@ -75,10 +77,13 @@ def predictCorrectAction(trainerNetwork, screenCaptures, numberOfPossibleActions
 
     return actions
 
-def trainNetworks(convolutionalAutoencoder, controllerNetwork, rewardNetwork, trainerNetwork, screenCaptures, rewards, possibleActions, rewardFunction, rateModifier=5, verbose=False, epochs=5, subsequenceLength=12):
+
+def trainNetworks(convolutionalAutoencoder, controllerNetwork, rewardNetwork, trainerNetwork, screenCaptures, rewards, possibleActions, rewardFunction, verbose=False, epochs=5, subsequenceLength=12):
     print("Beginning Training Sequence")
+    startTime = time.time()
     CAE.trainCNAE(convolutionalAutoencoder, screenCaptures[0], verbose=verbose, iterations=epochs)
-    trainRewardNetwork(rewardNetwork, screenCaptures, rewards, rewardFunction=rewardFunction, rateModifier=rateModifier, subsequenceLength=subsequenceLength, epochs=epochs, verbose=verbose)
-    correctActions = predictCorrectAction(trainerNetwork, screenCaptures, possibleActions, rateModifier=rateModifier, subsequenceLength=subsequenceLength)
-    trainControllerNetwork(controllerNetwork, screenCaptures, correctActions, rateModifier=rateModifier, subsequenceLength=subsequenceLength, epochs=epochs, verbose=verbose)
-    print("Finished Training Sequence")
+    trainRewardNetwork(rewardNetwork, screenCaptures, rewards, rewardFunction=rewardFunction, subsequenceLength=subsequenceLength, epochs=epochs, verbose=verbose)
+    correctActions = predictCorrectAction(trainerNetwork, screenCaptures, possibleActions, subsequenceLength=subsequenceLength)
+    trainControllerNetwork(controllerNetwork, screenCaptures, correctActions, subsequenceLength=subsequenceLength, epochs=epochs, verbose=verbose)
+    endTime = time.time()
+    print("Finished Training Sequence:", (endTime - startTime)/60, "minutes", (endTime - startTime)%60, "seconds")
