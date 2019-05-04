@@ -5,35 +5,18 @@ import R3Utilities as R3U
 import numpy as np
 import time
 
-def testRewardFunction(rawInputs, startTime, stopTime):
+def testRewardFunction(rawInputs, index):
+    raw = rawInputs[index]
+    if index == 0:
+        return 0
+    if raw[1] <= 0:
+        return -100
     reward = 0
-    prevGeo = rawInputs[startTime][0]
-    prevCombinedHealth = rawInputs[startTime][1] + rawInputs[startTime][2]
-    prevX = -1
-    for i in range(startTime, stopTime):
-        if rawInputs[i][1] > 0:
-            if rawInputs[i][0] - prevGeo > 0:
-                reward = max(reward, 0)
-            reward = reward + ((rawInputs[i][0] - prevGeo) * (prevCombinedHealth - (rawInputs[i][1] + rawInputs[i][2]) + 1)) * 10
-            healthDelta = prevCombinedHealth - (rawInputs[i][1] + rawInputs[i][2])
-            prevGeo = rawInputs[i][0]
-            prevCombinedHealth = rawInputs[i][1] + rawInputs[i][2]
-
-            if prevX > 0:
-                if prevX == rawInputs[i][3] and healthDelta < 1:
-                    if reward < 2:
-                        reward = reward - 1
-                    else:
-                        reward = reward/2
-                else:
-                    reward = reward + 1 + healthDelta * 2
-            prevX = rawInputs[i][3]
-
-        else:
-            reward = min(-prevGeo, -100)
-            prevGeo = 0
-            prevCombinedHealth = rawInputs[0][1] + rawInputs[0][2]
-            prevX = -1
+    prevRaw = rawInputs[index - 1]
+    if raw[3] == prevRaw[3]:
+        reward = reward - 5
+    reward = reward + ((raw[1] + raw[2]) - (prevRaw[1] + prevRaw[2])) * 20
+    reward = reward + (raw[0] - prevRaw[0]) * 50
 
     return reward
 
@@ -98,7 +81,7 @@ def testGameplay(imageSize, outputs, rewardMemoryAddresses, processID, resetScri
                 else:
                     rewards = np.append(rewards, [temp], axis=0)
                 lastSave = time.time()
-                actionReward = testRewardFunction(rewards, max(0, i - maxSequenceLength), i + 1)
+                actionReward = testRewardFunction(rewards, i)
                 i = i + 1
                 R3U.printLoadBar(i/processingIterations, 25, endString="%s%s%s%s%s" % (R3U.convertOutputToChar(output[-1], outputs), " => ", str(temp), "=>", actionReward))
         verbose = False
@@ -113,5 +96,5 @@ def testGameplay(imageSize, outputs, rewardMemoryAddresses, processID, resetScri
 
 keystrokes = list("wasdqfe")
 keystrokes.extend(["lmouse", "rmouse", "lshift", "space"])
-rewardMemoryAddresses = [0x93BAA118, 0x93BAA0E4, 0x93BAA0F0, 0x2792AF70] #Geo, Health, Shield, xCoord in Hollow Knight
-testGameplay((360, 200), keystrokes, rewardMemoryAddresses, processID=0x135C, resetScript=testResetScript, iterations=100000, processingInterval=0.15, processingIterations=200, maxSequenceLength=20)
+rewardMemoryAddresses = [0x93BD6118, 0x93BD60E4, 0x93BD60F0, 0x14186188] #Geo, Health, Shield, xCoord in Hollow Knight
+testGameplay((360, 200), keystrokes, rewardMemoryAddresses, processID=0x3270, resetScript=testResetScript, iterations=100000, processingInterval=0.15, processingIterations=200, maxSequenceLength=20)

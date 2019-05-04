@@ -5,6 +5,8 @@ from PIL import Image
 import numpy as np
 import random
 import pyscreenshot as ImageGrab
+import math
+
 
 def takeScreenShot(X1, Y1, X2, Y2, outputSize):
     im = ImageGrab.grab(bbox=(X1, Y1, X2, Y2), childprocess=False)
@@ -16,6 +18,7 @@ def takeScreenShot(X1, Y1, X2, Y2, outputSize):
 def takeScreenShotTest():
     image = takeScreenShot(0, 0, 1920, 1080)
     image.show()
+
 
 
 def printLoadBar (percentage, length, endString=""):
@@ -102,6 +105,7 @@ def convertOutputToHex(inputArray, outputArray):
     x = convertOutputToChar(inputArray, outputArray)
     return convertCharToHex(x)
 
+
 def createNHotArray(arrayLength, indices):
     ret = np.zeros(shape=(1,))
     for i in range(arrayLength):
@@ -112,3 +116,18 @@ def createNHotArray(arrayLength, indices):
         if i == 0:
             ret = np.delete(ret, 0)
     return ret
+
+
+def generateQArray(rawRewards, rewardFunction, learningRate=0.8):
+    q = None
+    for i in range(len(rawRewards)):
+        sum = 0
+        lookAheadLen = math.log(0.01, learningRate) #limit how far the qArray looks ahead for computational efficiency
+        for j in range(i, min(int(i + lookAheadLen + 1), len(rawRewards))):
+            sum = sum + rewardFunction(rawRewards, j) * (learningRate ** (j - i))
+        if q is None:
+            q = np.array([sum])
+        else:
+            q = np.append(q, [sum], axis=0)
+        printLoadBar((i + 1)/len(rawRewards), 25)
+    return q
