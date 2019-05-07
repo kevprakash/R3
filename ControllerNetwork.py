@@ -4,19 +4,19 @@ import tensorflow as tf
 from tensorflow import keras
 import R3Utilities as R3Util
 
-def initializeControllerNetwork(inputModel, nodesPerLayer, latentSpaceLength, outputLength, hiddenActivation=tf.nn.relu, dropoutRate=0, optimizer='rmsprop'):
-    "Generates LSTM networks given hyperparameters"
+def initializeControllerNetwork(inputModel, nodesPerLayer, latentSpaceLength, outputLength, hiddenActivation=tf.nn.relu, dropoutRate=0, optimizer='rmsprop', recurrentCell=keras.layers.SimpleRNN):
+    "Generates Recurrent networks given hyperparameters"
     initializer = tf.initializers.random_normal #makes weights random when you make a layer
     network = keras.Sequential() #each layer in the model will have a unique layer to pass their info into
     inputModelLayers = inputModel.layers
     network.add(keras.layers.TimeDistributed(inputModel, input_shape=(None, inputModel.input_shape[1], inputModel.input_shape[2], inputModel.input_shape[3])))
     network.add(keras.layers.TimeDistributed(keras.layers.Reshape((latentSpaceLength,))))
     for x in range(0, len(nodesPerLayer) - 1):
-        network.add(keras.layers.LSTM(nodesPerLayer[x], return_sequences=True, activation=hiddenActivation, recurrent_initializer=initializer, kernel_initializer=initializer))
+        network.add(recurrentCell(nodesPerLayer[x], return_sequences=True, activation=hiddenActivation, recurrent_initializer=initializer, kernel_initializer=initializer))
         print(x)
         if dropoutRate > 0:
             network.add(keras.layers.Dropout(rate=dropoutRate))
-    network.add(keras.layers.LSTM(nodesPerLayer[-1], return_sequences=False, activation=hiddenActivation, recurrent_initializer=initializer, kernel_initializer=initializer))
+    network.add(recurrentCell(nodesPerLayer[-1], return_sequences=False, activation=hiddenActivation, recurrent_initializer=initializer, kernel_initializer=initializer))
     if dropoutRate > 0:
         network.add(keras.layers.Dropout(rate=dropoutRate))
     network.add(keras.layers.Dense(outputLength, activation=tf.nn.softmax, kernel_initializer=initializer))

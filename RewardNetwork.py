@@ -2,13 +2,13 @@ import tensorflow as tf
 from keras.callbacks import TensorBoard
 from tensorflow import keras
 
-def initializeRewardNetwork(convolutionNetwork, controllerNetwork, latentSpaceLength, controllerOutputLength, nodesPerLayer, outputLength, dropoutRate=0, optimizer='rmsprop', hiddenActivation='relu', activation='relu'):
+def initializeRewardNetwork(convolutionNetwork, controllerNetwork, latentSpaceLength, controllerOutputLength, nodesPerLayer, outputLength, dropoutRate=0, optimizer='rmsprop', hiddenActivation='relu', activation='relu', recurrentCell=keras.layers.SimpleRNN):
     initializer = tf.initializers.random_normal
 
     c0, c1, c2, c3 = convolutionNetwork.input_shape
     convolutionInput = keras.layers.Input(shape=(c0, c1, c2, c3), name="Convolution_Input")
     convolution = keras.layers.TimeDistributed(convolutionNetwork, input_shape=(c0, c1, c2, c3))(convolutionInput)
-    convolutionFlattened = keras.layers.LSTM(latentSpaceLength, return_sequences=False, activation=hiddenActivation, recurrent_initializer=initializer, kernel_initializer=initializer)(convolution)
+    convolutionFlattened = recurrentCell(latentSpaceLength, return_sequences=False, activation=hiddenActivation, recurrent_initializer=initializer, kernel_initializer=initializer)(convolution)
     controller = controllerNetwork(convolutionInput)
 
     sharedModel = keras.Sequential()
