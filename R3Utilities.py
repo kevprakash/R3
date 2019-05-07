@@ -118,17 +118,20 @@ def createNHotArray(arrayLength, indices):
     return ret
 
 
-def generateQArray(rawRewards, rewardFunction, discountRate=0.8):
+def generateQArray(rawRewards, rewardFunction, discountRate=0.9, speedUpRate=1, verbose=False):
     q = None
     print("Generating Q Array")
     for i in range(len(rawRewards)):
-        sum = 0
-        lookAheadLen = math.log(0.01, discountRate) #limit how far the qArray looks ahead for computational efficiency
-        for j in range(i, min(int(i + lookAheadLen + 1), len(rawRewards))):
-            sum = sum + rewardFunction(rawRewards, j) * (discountRate ** (j - i))
-        if q is None:
-            q = np.array([sum])
-        else:
-            q = np.append(q, [sum], axis=0)
+        if i % speedUpRate == 0:
+            sum = 0
+            lookAheadLen = math.log(0.001, discountRate) #limit how far the qArray looks ahead for computational efficiency
+            for j in range(i, min(int(i + lookAheadLen + 1), len(rawRewards))):
+                sum = sum + rewardFunction(rawRewards, j) * (discountRate ** (j - i))
+            if q is None:
+                q = np.array([sum])
+            else:
+                q = np.append(q, [sum], axis=0)
         printLoadBar((i + 1)/len(rawRewards), 25)
+    if verbose:
+        print(q)
     return q
