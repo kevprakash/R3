@@ -4,7 +4,9 @@ from ctypes.wintypes import *
 from PIL import Image
 import numpy as np
 import random
+import KeyboardOutput as KeyOut
 import pyscreenshot as ImageGrab
+import ctypes
 import math
 
 
@@ -47,7 +49,7 @@ def printLoadBarTest():
     printLoadBar(1, 20)
 
 
-def readMemoryAddress(processID=4044, memoryAddress=0x1000000):
+def readMemoryAddress(processID=4044, memoryAddress=0x1000000, bufferType=c_int32):
     OpenProcess = windll.kernel32.OpenProcess
     ReadProcessMemory = windll.kernel32.ReadProcessMemory
     CloseHandle = windll.kernel32.CloseHandle
@@ -56,11 +58,11 @@ def readMemoryAddress(processID=4044, memoryAddress=0x1000000):
     pid = processID
     address = memoryAddress
 
-    buffer = c_ulong()
+    buffer = bufferType()
     #buffer = c_wchar_p("Test Test Test")
     #bufferSize = len(buffer.value)
     bufferSize = ctypes.sizeof(buffer)
-    bytesRead = c_ulong()
+    bytesRead = bufferType()
 
     processHandle = OpenProcess(PROCESS_VM_READ, False, pid)
     ReadProcessMemory(processHandle, c_void_p(address), ctypes.byref(buffer), bufferSize, ctypes.byref(bytesRead))
@@ -78,12 +80,7 @@ def readMemoryTest():
 
 
 def convertOutputToChar(inputArray, outputArray):
-    outputIndex = 0
-    for i in range(len(outputArray)):
-        rand1 = random.uniform(0, inputArray[outputIndex])
-        rand2 = random.uniform(0, inputArray[i])
-        if rand2 > rand1:
-            outputIndex = i
+    outputIndex = np.argmax(inputArray)
     return outputArray[outputIndex]
 
 
@@ -93,7 +90,7 @@ def convertCharToHex(char):
         'a': 0x1E, 's': 0x1F, 'd': 0x20, 'f': 0x21, 'g': 0x22, 'h': 0x23, 'j': 0x24, 'k': 0x25, 'l': 0x26,
         'z': 0x2c, 'x': 0x2d, 'c': 0x2e, 'v': 0x2f, 'b': 0x30, 'n': 0x31, 'm': 0x32,
         "space": 0x39, "lshift": 0x2A, "lctrl": 0x1D, "lalt": 0x38, "tab":0x0F, "lmouse": 0x02, "rmouse": 0x08, "midmouse": 0x20,
-        "up": 0xC8, "left": 0xCB, "right": 0xCD, "down": 0xD0
+        "up": 0xC8, "left": 0xCB, "right": 0xCD, "down": 0xD0, 'none': -1
     }
     mouse = False
     if char == "lmouse" or char == "rmouse" or char == "midmouse":
@@ -106,11 +103,11 @@ def convertOutputToHex(inputArray, outputArray):
     return convertCharToHex(x)
 
 
-def createNHotArray(arrayLength, indices):
+def createNHotArray(arrayLength, indices, value=1.0):
     ret = np.zeros(shape=(1,))
     for i in range(arrayLength):
         if i in indices:
-            ret = np.append(ret, [1.0], axis=0)
+            ret = np.append(ret, [value], axis=0)
         else:
             ret = np.append(ret, [0.0], axis=0)
         if i == 0:
@@ -135,3 +132,25 @@ def generateQArray(rawRewards, rewardFunction, discountRate=0.9, speedUpRate=1, 
     if verbose:
         print(q)
     return q
+
+
+def calculateQValue(rawRewards, rewardFunction, discountRate=0.9):
+    sum = 0
+    for i in range(len(rawRewards)):
+        sum = sum + rewardFunction(rawRewards, i) * (discountRate ** i)
+    return sum
+
+def performOutput(outputChar, previousOutputChar):
+    outputHex, isMouse = convertCharToHex(outputChar)
+    previousOutput, _ = convertCharToHex(previousOutputChar)
+    KeyOut.performOutput(outputHex, isMouse, previousOutput)
+    if isMouse:
+        return previousOutputChar
+    else:
+        return outputChar
+
+def stringToType(inputType):
+    conversion = {
+        "float":ctypes.c_float, "int":ctypes.c_int32
+    }
+    return conversion[inputType.lower()]

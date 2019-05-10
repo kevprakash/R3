@@ -25,6 +25,7 @@ def generateSubsequences(screenCaptures, subsequenceLength, speedUpRate=2):
 
     return x
 
+
 def trainRewardNetwork(rewardNetwork, states, rewards, rewardFunction, speedUpRate=2, epochs=5, verbose=False):
 
     rewardForSequence = R3U.generateQArray(rewards, rewardFunction, speedUpRate=speedUpRate)
@@ -33,7 +34,7 @@ def trainRewardNetwork(rewardNetwork, states, rewards, rewardFunction, speedUpRa
     rewardNetwork.fit(states, rewardForSequence, batch_size=1, epochs=epochs, verbose=verbose, shuffle=False)
 
 
-def trainControllerNetwork(controllerNetwork, states, correctActions, epochs=5, verbose=False):
+def trainControllerNetwork(convolutionNetwork, controllerNetwork, states, correctActions, epochs=5, verbose=False):
     y = None
     print("Creating Training Data for Controller Network")
     actionIndex = 0
@@ -46,8 +47,20 @@ def trainControllerNetwork(controllerNetwork, states, correctActions, epochs=5, 
         R3U.printLoadBar((i + 1)/len(states), length=25)
 
     print("Training Controller Network")
-    controllerNetwork.fit(states, y, batch_size=1, epochs=epochs, verbose=verbose, shuffle=False)
 
+    for layer in controllerNetwork.layers:
+        layer.trainable = True
+
+    for layer in convolutionNetwork.layers:
+        layer.trainable = True
+
+    controllerNetwork.fit(states, y, batch_size=1, epochs=epochs*5, verbose=verbose, shuffle=False)
+
+    for layer in controllerNetwork.layers:
+        layer.trainable = False
+
+    for layer in convolutionNetwork.layers:
+        layer.trainable = False
 
 def predictCorrectAction(trainerNetwork, states, numberOfPossibleActions):
     print("Predicting Correct Course of Action")
@@ -62,8 +75,8 @@ def predictCorrectAction(trainerNetwork, states, numberOfPossibleActions):
             if testReward[0][0] > maxReward:
                 maxRewardIndex = j
                 maxReward = testReward[0][0]
-        if maxReward < 0 and random.uniform(0, 1) > (-1/maxReward):
-            maxRewardIndex = min(int(random.uniform(0, numberOfPossibleActions)), numberOfPossibleActions - 1)
+        if maxReward < 0:
+            maxRewardIndex = random.randint(0, numberOfPossibleActions - 1)
 
         R3U.printLoadBar((i + 1)/len(states), length=25)
 
@@ -72,13 +85,21 @@ def predictCorrectAction(trainerNetwork, states, numberOfPossibleActions):
     return actions
 
 
-def trainNetworks(convolutionalAutoencoder, controllerNetwork, rewardNetwork, trainerNetwork, screenCaptures, rewards, possibleActions, rewardFunction, speedUpRate=2, verbose=False, epochs=5, subsequenceLength=12):
+def trainTrainerNetwork(trainerNetwork, screenCaptures, subsequenceLength, actions, rewards, rewardFunction, speedUpRate=2, epochs=5, verbose=False):
+    states = generateSubsequences(screenCaptures, subsequenceLength, speedUpRate=speedUpRate)
+    rewardForSequence = R3U.generateQArray(rewards, rewardFunction, speedUpRate=speedUpRate)
+
+    print("Training Reward Network")
+    trainerNetwork.fit([states, actions], rewardForSequence, batch_size=1, epochs=epochs, verbose=verbose, shuffle=False)
+
+
+def trainNetworks(convolutionalAutoencoder, vision, controllerNetwork, rewardNetwork, trainerNetwork, screenCaptures, rewards, possibleActions, rewardFunction, speedUpRate=2, verbose=False, epochs=5, subsequenceLength=12):
     print("Beginning Training Sequence")
     startTime = time.time()
-    CAE.trainCNAE(convolutionalAutoencoder, screenCaptures[0], verbose=verbose, iterations=epochs)
+    #wwCAE.trainCNAE(convolutionalAutoencoder, screenCaptures[0], verbose=verbose, iterations=epochs)
     states = generateSubsequences(screenCaptures, subsequenceLength, speedUpRate=speedUpRate)
     trainRewardNetwork(rewardNetwork, states, rewards, speedUpRate=speedUpRate, rewardFunction=rewardFunction, epochs=epochs, verbose=verbose)
     correctActions = predictCorrectAction(trainerNetwork, states, possibleActions)
-    trainControllerNetwork(controllerNetwork, states, correctActions, epochs=epochs, verbose=verbose)
+    trainControllerNetwork(vision, controllerNetwork, states, correctActions, epochs=epochs, verbose=verbose)
     duration = time.time() - startTime
     print("Finished Training Sequence:", int(duration / 60), "min", int(duration % 60), "s")
