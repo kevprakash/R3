@@ -3,6 +3,10 @@ from tensorflow import keras
 
 def generateNetwork(imageSize, numberOfFilters, filterSizes, strideSizes, hiddenNodes, outputLength, optimizer=keras.optimizers.SGD, learningRate=0.01, recurrentActivations=tf.nn.sigmoid, convolutionActivations=tf.nn.tanh, hiddenActivations=tf.nn.tanh):
     print("Generating Model")
+    gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.333)
+
+    sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
+
     initializer = keras.initializers.RandomNormal(mean=0.0, stddev=0.05, seed=None)
     convolutionInput = keras.layers.Input(shape=(None, imageSize[1], imageSize[0], 3), name="Convolution_Input")
     x = keras.layers.TimeDistributed(keras.layers.Activation(activation=None))(convolutionInput)
