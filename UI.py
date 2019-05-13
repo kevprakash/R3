@@ -139,7 +139,7 @@ def generateModel():
 
 
 def run():
-    time.sleep(5)
+    time.sleep(2)
     memoryLengthConverted = int(memoryLength.get('1.0', tk.END))
     recurrenceLengthConverted = int(recurrenceLength.get('1.0', tk.END))
 
@@ -182,11 +182,11 @@ def run():
                        recurrenceLengthConverted, killSwitch=killSwitchConverted, train=shouldTrain.get(),
                        qLearningRate=learningRateConverted, explorationRate=explorationRateConverted)
 
-
     temp = keyboardOutput.get('1.0', tk.END).split(", ")
     keyboardOutputConverted = []
     for i in temp:
         keyboardOutputConverted.append(i)
+
 
 #Start Tab
 modelButton = addButton(start, "Generate Model", 5, 25, 0, 0, generateModel)
